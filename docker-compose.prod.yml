@@ -53,6 +53,11 @@ services:
       - CELERY_BROKER_URL=redis://lms_redis:6379/1
       - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
       - STORAGE_LOCAL_BASE_PATH=/data/uploads
+      - S3_ENDPOINT_URL=http://shared-minio:9010
+      - S3_ACCESS_KEY=admin
+      - S3_SECRET_KEY=SuperSecretPassword123
+      - S3_BUCKET_NAME=lms
+      - S3_USE_SSL=false
       - TZ=Asia/Jakarta
     volumes:
       - lms_uploads:/data/uploads
@@ -82,6 +87,11 @@ services:
       - CELERY_BROKER_URL=redis://lms_redis:6379/1
       - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
       - STORAGE_LOCAL_BASE_PATH=/data/uploads
+      - S3_ENDPOINT_URL=http://shared-minio:9010
+      - S3_ACCESS_KEY=admin
+      - S3_SECRET_KEY=SuperSecretPassword123
+      - S3_BUCKET_NAME=lms
+      - S3_USE_SSL=false
       - TZ=Asia/Jakarta
     volumes:
       - lms_uploads:/data/uploads

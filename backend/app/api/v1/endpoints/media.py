@@ -4,7 +4,7 @@ import time
 import os
 from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_id, get_storage
@@ -12,7 +12,7 @@ from app.core.storage.base import StorageBackend
 from app.core.config import settings
 from app.services.media_service import MediaService
 from app.schemas.media import MediaUploadResponse, SignedUrlResponse
-from app.models.media import OwnerType
+from app.models.media import OwnerType, StorageDriver
 from app.repositories.media_repo import MediaRepository
 
 router = APIRouter()
@@ -53,6 +53,7 @@ async def get_signed_url(
 @router.get("/{media_id}/stream")
 async def stream_media_by_id(
     media_id: int,
+    storage: StorageBackend = Depends(get_storage),
     db: AsyncSession = Depends(get_db),
 ):
     repo = MediaRepository(db)
@@ -60,23 +61,27 @@ async def stream_media_by_id(
     if not media:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media tidak ditemukan")
 
+    # If file stored in S3/MinIO
+    if media.storage_driver == StorageDriver.s3:
+        signed_url = await storage.get_signed_url(media.storage_key, expires_in=3600)
+        return RedirectResponse(url=signed_url)
+
+    # If local disk
     base_path = Path(settings.STORAGE_LOCAL_BASE_PATH)
     file_path = base_path / media.storage_key
 
     if not file_path.exists():
-        # check fallback in /data/uploads or ./uploads
         alt_path = Path("/data/uploads") / media.storage_key
         if alt_path.exists():
             file_path = alt_path
         else:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File media tidak ditemukan di server")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File media tidak ditemukan di disk server")
 
     return FileResponse(path=str(file_path), media_type=media.mime_type, filename=media.original_name)
 
 
 @router.get("/files/{key:path}")
 async def serve_protected_file(key: str, expires: int, signature: str):
-    # Verify HMAC signature
     expected = hmac.new(
         settings.STORAGE_SIGNING_SECRET.encode(),
         f"{key}:{expires}".encode(),

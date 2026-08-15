@@ -99,8 +99,6 @@ class SessionService:
         steps: list[SlideItem] = []
         step_counter = 1
 
-        # We construct a rich interspersed slide sequence
-        # If questions exist, we group them into quizzes (e.g. 1 question per quiz or chunks)
         total_quizzes = max(1, len(questions))
         quiz_weight = round(100.0 / total_quizzes, 2)
 
@@ -120,17 +118,6 @@ class SessionService:
             # Interleave a quiz after every content if questions are available
             if q_idx < len(questions):
                 q_item = questions[q_idx]
-                q_schema = QuestionResponse(
-                    id=q_item.id,
-                    session_id=q_item.session_id,
-                    question_text=q_item.question_text,
-                    points=q_item.points,
-                    order=q_item.order,
-                    options=[
-                        QuestionOptionResponse(id=opt.id, question_id=opt.question_id, option_text=opt.option_text, order=opt.order)
-                        for opt in q_item.options
-                    ]
-                )
                 steps.append(SlideItem(
                     id=q_item.id + 10000,
                     step_number=step_counter,
@@ -138,7 +125,7 @@ class SessionService:
                     title=f"Checkpoint Kuis #{q_idx + 1} (Bobot: {quiz_weight}%)",
                     quiz_group_id=q_idx + 1,
                     quiz_weight_percent=quiz_weight,
-                    questions=[q_schema]
+                    questions=[QuestionResponse.model_validate(q_item)]
                 ))
                 step_counter += 1
                 q_idx += 1
@@ -146,17 +133,6 @@ class SessionService:
         # Add remaining questions if any
         while q_idx < len(questions):
             q_item = questions[q_idx]
-            q_schema = QuestionResponse(
-                id=q_item.id,
-                session_id=q_item.session_id,
-                question_text=q_item.question_text,
-                points=q_item.points,
-                order=q_item.order,
-                options=[
-                    QuestionOptionResponse(id=opt.id, question_id=opt.question_id, option_text=opt.option_text, order=opt.order)
-                    for opt in q_item.options
-                ]
-            )
             steps.append(SlideItem(
                 id=q_item.id + 10000,
                 step_number=step_counter,
@@ -164,7 +140,7 @@ class SessionService:
                 title=f"Checkpoint Kuis #{q_idx + 1} (Bobot: {quiz_weight}%)",
                 quiz_group_id=q_idx + 1,
                 quiz_weight_percent=quiz_weight,
-                questions=[q_schema]
+                questions=[QuestionResponse.model_validate(q_item)]
             ))
             step_counter += 1
             q_idx += 1
@@ -210,8 +186,6 @@ class SessionService:
         total_quizzes = max(1, len(all_questions))
         step_weight = 100.0 / total_quizzes
 
-        # Map user answers
-        answer_map = {ans.question_id: ans.selected_option_id for ans in req.answers}
         step_correct_count = 0
         step_total_questions = len(req.answers)
 
@@ -289,7 +263,6 @@ class SessionService:
         sp.time_spent_seconds += req.time_spent_seconds
         sp.completed_at = datetime.utcnow()
 
-        # If completed percent is 100% and score >= 70%, mark as completed
         if completed_percent >= 100.0 and sp.score >= 70.0:
             sp.status = ProgressStatus.completed
 

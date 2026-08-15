@@ -17,7 +17,7 @@ from app.models.session import ModuleSession
 from app.models.content import SessionContent, ContentType
 from app.models.question import Question, QuestionOption
 from app.models.token import ModuleToken
-from app.models.media import MediaFile, OwnerType, StorageDriver
+from app.models.media import MediaFile, OwnerType, StorageDriver, FileType, MediaStatus
 
 MODULES_DATA = [
     {
@@ -402,8 +402,8 @@ async def reset_and_seed_curriculum():
                 storage_key=diag_file,
                 original_name=f"Blueprint_Modul_{mod_idx}.svg",
                 mime_type="image/svg+xml",
-                file_size_bytes=4096,
-                uploaded_by=admin_user.id,
+                size_bytes=4096, file_type=FileType.image, status=MediaStatus.ready, created_by=admin_user.id,
+                
                 owner_type=OwnerType.session_content
             )
             db.add(diag_media)
@@ -415,8 +415,8 @@ async def reset_and_seed_curriculum():
                 storage_key=vid_file,
                 original_name=f"Demo_Stream_Modul_{mod_idx}.mp4",
                 mime_type="video/mp4",
-                file_size_bytes=524288,
-                uploaded_by=admin_user.id,
+                size_bytes=524288, file_type=FileType.video, status=MediaStatus.ready, created_by=admin_user.id,
+                
                 owner_type=OwnerType.session_content
             )
             db.add(vid_media)

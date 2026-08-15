@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   XCircle,
-  HelpCircle,
   PlayCircle,
   FileText,
   Clock,
@@ -26,14 +25,12 @@ import api from '@/lib/api'
 interface OptionItem {
   id: number
   option_text: string
-  is_correct?: boolean
 }
 
 interface QuestionItem {
   id: number
   question_text: string
   points: number
-  explanation?: string
   options: OptionItem[]
 }
 
@@ -61,8 +58,6 @@ interface QuestionFeedback {
   question_id: number
   selected_option_id: number
   is_correct: boolean
-  correct_option_id?: number
-  explanation?: string
 }
 
 export default function SessionPage() {
@@ -116,7 +111,7 @@ export default function SessionPage() {
   }
 
   const handleSelectOption = (questionId: number, optionId: number) => {
-    if (isSubmitted) return
+    if (isSubmitted && isPassed) return
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionId }))
   }
 
@@ -165,7 +160,7 @@ export default function SessionPage() {
       <PageLayout>
         <div className="max-w-4xl mx-auto py-16 text-center space-y-3">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-          <p className="text-muted-foreground text-sm font-medium">Memuat materi & kuis evaluasi...</p>
+          <p className="text-muted-foreground text-sm font-medium">Memuat materi pembelajaran...</p>
         </div>
       </PageLayout>
     )
@@ -208,13 +203,13 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {/* Hero Judul Sesi */}
+        {/* Judul Sesi */}
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
             {session.title}
           </h1>
           <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-            {session.description || 'Pelajari seluruh materi teks, diagram arsitektur, dan selesaikan kuis pilihan ganda di bawah ini.'}
+            {session.description || 'Pelajari materi pembelajaran, simak video demonstrasi, lalu selesaikan evaluasi pemahaman di bawah ini.'}
           </p>
         </div>
 
@@ -233,7 +228,7 @@ export default function SessionPage() {
           <TabsContent value="materi" className="space-y-6 pt-4">
             {(!session.contents || session.contents.length === 0) ? (
               <Card className="p-8 text-center text-muted-foreground border-dashed">
-                Materi teks dan media sedang dipersiapkan oleh instruktur.
+                Materi pembelajaran sedang dipersiapkan oleh instruktur.
               </Card>
             ) : (
               session.contents.map((item) => (
@@ -249,7 +244,7 @@ export default function SessionPage() {
                   <CardContent className="p-6 space-y-4">
                     {/* Render Text Body */}
                     {item.body_text && (
-                      <div className="prose dark:prose-invert max-w-none text-sm md:text-base leading-relaxed whitespace-pre-line text-foreground/90">
+                      <div className="prose dark:prose-invert max-w-none text-sm md:text-base leading-relaxed whitespace-pre-line text-foreground/90 font-normal">
                         {item.body_text}
                       </div>
                     )}
@@ -293,7 +288,7 @@ export default function SessionPage() {
             </div>
           </TabsContent>
 
-          {/* TAB 2: KUIS PILIHAN GANDA (MCQ) */}
+          {/* TAB 2: KUIS EVALUASI (TANPA BOCORAN KUNCI JAWABAN) */}
           <TabsContent value="kuis" className="space-y-6 pt-4">
             {totalQuestions === 0 ? (
               <Card className="p-8 text-center text-muted-foreground border-dashed">
@@ -322,12 +317,12 @@ export default function SessionPage() {
                         )}
                       </div>
                       <h3 className="text-2xl font-black">
-                        {isPassed ? '?? Selamat! Anda LULUS Sesi Ini' : '?? Nilai Anda Belum Memenuhi KKM'}
+                        {isPassed ? '?? Selamat! Anda LULUS Sesi Ini' : '?? Nilai Anda Belum Memenuhi Standar KKM'}
                       </h3>
                       <p className="text-sm text-muted-foreground max-w-md mx-auto">
                         {isPassed
-                          ? `Anda berhasil menjawab ${correctCount} dari ${totalQuestions} soal dengan benar. Skor Anda tersimpan di database.`
-                          : `Anda mendapatkan skor ${quizScore}%. Standar kelulusan adalah 70%. Silakan pelajari kembali materi dan ulangi kuis.`}
+                          ? `Anda berhasil menjawab ${correctCount} dari ${totalQuestions} soal dengan benar (${quizScore}%). Hasil telah tersimpan di database.`
+                          : `Anda mendapatkan skor ${quizScore}% (${correctCount} dari ${totalQuestions} soal benar). Standar kelulusan adalah 70%. Silakan pelajari kembali materi dan ulangi kuis.`}
                       </p>
                       <div className="text-3xl font-extrabold text-foreground pt-1">
                         Skor Akhir: <span className={isPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>{quizScore}%</span>
@@ -335,12 +330,12 @@ export default function SessionPage() {
 
                       <div className="pt-3 flex flex-wrap gap-3 justify-center">
                         {!isPassed ? (
-                          <Button onClick={handleRetakeQuiz} variant="default" className="gap-2 font-bold">
-                            <RotateCcw className="h-4 w-4" /> Ulangi Kuis
+                          <Button onClick={handleRetakeQuiz} variant="default" className="gap-2 font-bold shadow">
+                            <RotateCcw className="h-4 w-4" /> Ulangi Pengerjaan Kuis
                           </Button>
                         ) : (
                           <Link to={`/modules/${session.module_id}`}>
-                            <Button variant="default" className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700">
+                            <Button variant="default" className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 shadow">
                               Lanjut ke Sesi Berikutnya <ArrowLeft className="h-4 w-4 rotate-180" />
                             </Button>
                           </Link>
@@ -357,11 +352,10 @@ export default function SessionPage() {
                   </div>
                 )}
 
-                {/* Daftar Soal */}
+                {/* Daftar Soal (KUNCI JAWABAN TIDAK DIBOCORKAN) */}
                 <div className="space-y-6">
                   {session.questions.map((q, qIndex) => {
                     const selectedOptId = selectedAnswers[q.id]
-                    const qFeedback = feedback.find(f => f.question_id === q.id)
 
                     return (
                       <Card key={q.id} className="border-border/80 shadow-sm overflow-hidden">
@@ -379,16 +373,15 @@ export default function SessionPage() {
                           <div className="grid grid-cols-1 gap-2.5">
                             {q.options.map((opt) => {
                               const isSelected = selectedOptId === opt.id
-                              const isOptionCorrect = qFeedback?.correct_option_id === opt.id
 
                               let optionStyle = 'border-border/60 hover:bg-muted/40'
                               if (isSubmitted) {
-                                if (isOptionCorrect) {
-                                  optionStyle = 'border-emerald-500 bg-emerald-500/15 text-emerald-950 dark:text-emerald-200 font-semibold'
-                                } else if (isSelected && !qFeedback?.is_correct) {
-                                  optionStyle = 'border-destructive bg-destructive/15 text-destructive font-semibold'
+                                if (isSelected) {
+                                  optionStyle = isPassed
+                                    ? 'border-emerald-500 bg-emerald-500/10 font-semibold ring-1 ring-emerald-500'
+                                    : 'border-primary bg-primary/10 font-semibold ring-1 ring-primary'
                                 } else {
-                                  optionStyle = 'opacity-50 border-border/40'
+                                  optionStyle = 'opacity-60 border-border/40'
                                 }
                               } else if (isSelected) {
                                 optionStyle = 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
@@ -398,28 +391,20 @@ export default function SessionPage() {
                                 <button
                                   key={opt.id}
                                   type="button"
-                                  disabled={isSubmitted}
+                                  disabled={isSubmitted && isPassed}
                                   onClick={() => handleSelectOption(q.id, opt.id)}
                                   className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between text-sm ${optionStyle}`}
                                 >
                                   <span>{opt.option_text}</span>
-                                  {isSubmitted && isOptionCorrect && (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 ml-2" />
-                                  )}
-                                  {isSubmitted && isSelected && !qFeedback?.is_correct && (
-                                    <XCircle className="h-4 w-4 text-destructive shrink-0 ml-2" />
+                                  {isSelected && (
+                                    <span className="text-xs font-semibold text-primary ml-2 px-2 py-0.5 rounded bg-primary/15 shrink-0">
+                                      Pilihan Anda
+                                    </span>
                                   )}
                                 </button>
                               )
                             })}
                           </div>
-
-                          {/* Pembahasan Soal Jika Sudah Disubmit */}
-                          {isSubmitted && qFeedback?.explanation && (
-                            <div className="mt-4 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs leading-relaxed text-blue-900 dark:text-blue-200">
-                              <strong>?? Pembahasan:</strong> {qFeedback.explanation}
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     )

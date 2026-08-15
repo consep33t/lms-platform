@@ -127,7 +127,7 @@ class SessionService:
         for ea in existing_ans:
             await self.db.delete(ea)
 
-        # 3. Evaluate each question
+        # 3. Evaluate each question (WITHOUT LEAKING CORRECT ANSWERS)
         for q in questions:
             options = q.options
             correct_option = next((opt for opt in options if opt.is_correct), None)
@@ -147,12 +147,11 @@ class SessionService:
             )
             self.db.add(user_ans_record)
 
+            # Do NOT leak correct option id or explanation
             feedback_list.append(QuestionFeedback(
                 question_id=q.id,
                 selected_option_id=selected_opt_id or 0,
-                is_correct=is_correct,
-                correct_option_id=correct_option.id if correct_option else None,
-                explanation=q.explanation
+                is_correct=is_correct
             ))
 
         # 4. Calculate Final Score (passing score 70%)

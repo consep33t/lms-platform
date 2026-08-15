@@ -19,8 +19,6 @@ class QuestionFeedback(BaseModel):
     question_id: int
     selected_option_id: int
     is_correct: bool
-    correct_option_id: int | None = None
-    explanation: str | None = None
 
 
 class SessionSubmitRequest(BaseModel):

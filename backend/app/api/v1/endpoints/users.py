@@ -56,42 +56,39 @@ async def get_my_learning_progress(
     items: list[UserModuleProgressItem] = []
 
     for mod in modules:
-        # Total sessions
+        # Total sessions in this module
         stmt_ts = select(func.count(ModuleSession.id)).where(
             ModuleSession.module_id == mod.id,
             ModuleSession.is_deleted == False
         )
         total_sessions = (await db.execute(stmt_ts)).scalar() or 0
 
-        # Completed sessions by user
-        stmt_cs = select(
-            func.count(SessionProgress.id),
-            func.avg(SessionProgress.score)
-        ).where(
-            SessionProgress.user_id == current_user_id,
-            SessionProgress.status == ProgressStatus.completed,
-            SessionProgress.session_id.in_(
-                select(ModuleSession.id).where(ModuleSession.module_id == mod.id)
-            )
-        )
-        res_cs = await db.execute(stmt_cs)
-        completed_count, avg_score = res_cs.one()
-        completed_count = completed_count or 0
-        avg_score = float(avg_score) if avg_score is not None else 0.0
-
-        # Module Progress
-        stmt_mp = select(UserModuleProgress).where(
+        # Find user_module_progress
+        stmt_ump = select(UserModuleProgress).where(
             UserModuleProgress.user_id == current_user_id,
             UserModuleProgress.module_id == mod.id
         )
-        res_mp = await db.execute(stmt_mp)
-        mp = res_mp.scalar_one_or_none()
+        res_ump = await db.execute(stmt_ump)
+        ump = res_ump.scalar_one_or_none()
 
-        prog_status = mp.status if mp else ProgressStatus.in_progress
+        completed_count = 0
+        avg_score = 0.0
+
+        if ump:
+            stmt_cs = select(
+                func.count(SessionProgress.id),
+                func.avg(SessionProgress.score)
+            ).where(
+                SessionProgress.user_module_progress_id == ump.id,
+                SessionProgress.status == ProgressStatus.completed
+            )
+            res_cs = await db.execute(stmt_cs)
+            row = res_cs.one()
+            completed_count = row[0] or 0
+            avg_score = float(row[1]) if row[1] is not None else 0.0
+
         prog_percent = round((completed_count / total_sessions * 100.0), 1) if total_sessions > 0 else 0.0
-
-        if prog_percent >= 100.0:
-            prog_status = ProgressStatus.completed
+        prog_status = ProgressStatus.completed if prog_percent >= 100.0 else (ProgressStatus.in_progress if prog_percent > 0 else ProgressStatus.not_started)
 
         items.append(UserModuleProgressItem(
             module_id=mod.id,
@@ -105,4 +102,3 @@ async def get_my_learning_progress(
         ))
 
     return items
-

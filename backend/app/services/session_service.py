@@ -1,232 +1,216 @@
 from datetime import datetime
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from app.repositories.session_repo import SessionRepository
-from app.models.session import ModuleSession
-from app.models.content import ContentWatchProgress
-from app.models.progress import SessionProgress, UserModuleProgress, UserAnswer, ProgressStatus
-from app.models.question import Question, QuestionOption
+from sqlalchemy import select, func, and_
+from fastapi import HTTPException, status
+from app.models.session import ModuleSession, SessionContent, ContentWatchProgress, Question, QuestionOption
+from app.models.progress import UserModuleProgress, SessionProgress, UserAnswer, ProgressStatus
+from app.schemas.session import SessionDetailResponse
 from app.schemas.progress import (
+    WatchProgressRequest,
     SessionSubmitRequest,
     SessionSubmitResponse,
-    QuestionFeedback,
-    WatchProgressRequest,
-    SessionProgressResponse
+    SessionProgressResponse,
+    QuestionFeedbackItem
 )
 
 
 class SessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.repo = SessionRepository(db)
 
-    async def get_session_detail(self, session_id: int) -> ModuleSession:
-        session = await self.repo.get_by_id(session_id)
+    async def get_session_detail(self, session_id: int) -> SessionDetailResponse:
+        stmt = (
+            select(ModuleSession)
+            .where(ModuleSession.id == session_id, ModuleSession.is_deleted == False)
+        )
+        res = await self.db.execute(stmt)
+        session = res.scalar_one_or_none()
         if not session:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesi pembelajaran tidak ditemukan")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesi tidak ditemukan")
         return session
 
-    async def get_user_session_progress(self, session_id: int, user_id: int) -> SessionProgressResponse:
-        session = await self.get_session_detail(session_id)
-        stmt = select(SessionProgress).where(
-            SessionProgress.user_id == user_id,
-            SessionProgress.session_id == session_id
-        )
-        res = await self.db.execute(stmt)
-        progress = res.scalar_one_or_none()
-
-        if not progress:
-            return SessionProgressResponse(
-                session_id=session_id,
-                is_unlocked=True,
-                is_completed=False,
-                score=None,
-                status=None
-            )
-
-        return SessionProgressResponse(
-            session_id=session_id,
-            is_unlocked=True,
-            is_completed=(progress.status == ProgressStatus.completed),
-            score=progress.score,
-            status=progress.status
-        )
-
-    async def update_watch_progress(self, content_id: int, user_id: int, req: WatchProgressRequest) -> None:
-        session_id = req.session_id
-        if not session_id:
-            # Find session_id from session_progress
-            if req.session_progress_id:
-                stmt_sp = select(SessionProgress.session_id).where(SessionProgress.id == req.session_progress_id)
-                res_sp = await self.db.execute(stmt_sp)
-                session_id = res_sp.scalar_one_or_none()
-
-        if not session_id:
-            return
-
-        # Find or create SessionProgress
-        stmt = select(SessionProgress).where(
-            SessionProgress.user_id == user_id,
-            SessionProgress.session_id == session_id
-        )
-        res = await self.db.execute(stmt)
-        progress = res.scalar_one_or_none()
-
-        if not progress:
-            progress = SessionProgress(
-                user_id=user_id,
-                session_id=session_id,
-                status=ProgressStatus.in_progress,
-                started_at=datetime.utcnow()
-            )
-            self.db.add(progress)
-            await self.db.flush()
-
-        stmt_wp = select(ContentWatchProgress).where(
-            ContentWatchProgress.session_progress_id == progress.id,
-            ContentWatchProgress.session_content_id == content_id
-        )
-        res_wp = await self.db.execute(stmt_wp)
-        record = res_wp.scalar_one_or_none()
-
-        if not record:
-            record = ContentWatchProgress(
-                session_progress_id=progress.id,
-                session_content_id=content_id,
-                watched_percent=req.watched_percent,
-                is_completed=req.is_completed
-            )
-            self.db.add(record)
-        else:
-            record.watched_percent = max(record.watched_percent, req.watched_percent)
-            if req.is_completed:
-                record.is_completed = True
-
-    async def submit_session_quiz(self, session_id: int, user_id: int, req: SessionSubmitRequest) -> SessionSubmitResponse:
-        session = await self.get_session_detail(session_id)
-
-        # 1. Find or initialize SessionProgress
-        stmt_p = select(SessionProgress).where(
-            SessionProgress.user_id == user_id,
-            SessionProgress.session_id == session_id
-        )
-        res_p = await self.db.execute(stmt_p)
-        progress = res_p.scalar_one_or_none()
-
-        if not progress:
-            progress = SessionProgress(
-                user_id=user_id,
-                session_id=session_id,
-                status=ProgressStatus.in_progress,
-                started_at=datetime.utcnow()
-            )
-            self.db.add(progress)
-            await self.db.flush()
-
-        # 2. Evaluate answers
-        correct_count = 0
-        total_questions = len(session.questions) if session.questions else len(req.answers)
-        feedback_list: list[QuestionFeedback] = []
-
-        # Build questions lookup
-        q_map = {q.id: q for q in session.questions}
-
-        for ans in req.answers:
-            q = q_map.get(ans.question_id)
-            correct_opt_id = None
-            explanation = None
-            is_correct = False
-
-            if q:
-                explanation = q.explanation
-                for opt in q.options:
-                    if opt.is_correct:
-                        correct_opt_id = opt.id
-                    if opt.id == ans.selected_option_id and opt.is_correct:
-                        is_correct = True
-
-            if is_correct:
-                correct_count += 1
-
-            feedback_list.append(QuestionFeedback(
-                question_id=ans.question_id,
-                selected_option_id=ans.selected_option_id,
-                is_correct=is_correct,
-                correct_option_id=correct_opt_id,
-                explanation=explanation
-            ))
-
-            # Store answer
-            user_ans = UserAnswer(
-                session_progress_id=progress.id,
-                question_id=ans.question_id,
-                selected_option_id=ans.selected_option_id,
-                is_correct=is_correct,
-                answered_at=datetime.utcnow()
-            )
-            self.db.add(user_ans)
-
-        # 3. Calculate score & passing status
-        score = (correct_count / total_questions * 100.0) if total_questions > 0 else 100.0
-        passing_score = session.passing_score or 70.0
-        passed = score >= passing_score
-
-        progress.score = score
-        progress.time_spent_seconds = req.time_spent_seconds or 0
-        progress.status = ProgressStatus.completed if passed else ProgressStatus.in_progress
-        if passed:
-            progress.completed_at = datetime.utcnow()
-
-        # 4. Sync module progress
-        module_id = session.module_id
-        stmt_mp = select(UserModuleProgress).where(
+    async def get_or_create_module_progress(self, user_id: int, module_id: int) -> UserModuleProgress:
+        stmt = select(UserModuleProgress).where(
             UserModuleProgress.user_id == user_id,
             UserModuleProgress.module_id == module_id
         )
-        res_mp = await self.db.execute(stmt_mp)
-        module_progress = res_mp.scalar_one_or_none()
-
-        if not module_progress:
-            module_progress = UserModuleProgress(
+        ump = (await self.db.execute(stmt)).scalar_one_or_none()
+        if not ump:
+            ump = UserModuleProgress(
                 user_id=user_id,
                 module_id=module_id,
                 status=ProgressStatus.in_progress,
                 started_at=datetime.utcnow()
             )
-            self.db.add(module_progress)
+            self.db.add(ump)
+            await self.db.flush()
+        return ump
 
-        # Check total completed sessions for this module
-        stmt_all_sess = select(func.count(ModuleSession.id)).where(
-            ModuleSession.module_id == module_id,
+    async def get_user_session_progress(self, session_id: int, user_id: int) -> SessionProgressResponse:
+        session_item = await self.get_session_detail(session_id)
+        ump = await self.get_or_create_module_progress(user_id, session_item.module_id)
+
+        stmt = select(SessionProgress).where(
+            SessionProgress.user_module_progress_id == ump.id,
+            SessionProgress.session_id == session_id
+        )
+        sp = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not sp:
+            return SessionProgressResponse(
+                session_id=session_id,
+                is_completed=False,
+                score=None,
+                time_spent_seconds=0
+            )
+
+        return SessionProgressResponse(
+            session_id=session_id,
+            is_completed=(sp.status == ProgressStatus.completed),
+            score=sp.score,
+            time_spent_seconds=sp.time_spent_seconds
+        )
+
+    async def submit_session_quiz(
+        self, session_id: int, user_id: int, req: SessionSubmitRequest
+    ) -> SessionSubmitResponse:
+        session_item = await self.get_session_detail(session_id)
+        ump = await self.get_or_create_module_progress(user_id, session_item.module_id)
+
+        # 1. Fetch all questions and options for this session
+        stmt_q = select(Question).where(
+            Question.session_id == session_id,
+            Question.is_deleted == False
+        )
+        res_q = await self.db.execute(stmt_q)
+        questions = list(res_q.scalars().all())
+
+        if not questions:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sesi ini tidak memiliki soal kuis")
+
+        total_questions = len(questions)
+        correct_count = 0
+        feedback_list: list[QuestionFeedbackItem] = []
+
+        # Map user answers
+        user_answer_map = {ans.question_id: ans.selected_option_id for ans in req.answers}
+
+        # 2. Get or create SessionProgress
+        stmt_sp = select(SessionProgress).where(
+            SessionProgress.user_module_progress_id == ump.id,
+            SessionProgress.session_id == session_id
+        )
+        sp = (await self.db.execute(stmt_sp)).scalar_one_or_none()
+
+        if not sp:
+            sp = SessionProgress(
+                user_module_progress_id=ump.id,
+                session_id=session_id,
+                status=ProgressStatus.in_progress,
+                started_at=datetime.utcnow()
+            )
+            self.db.add(sp)
+            await self.db.flush()
+
+        # Delete previous answers if any
+        stmt_del = select(UserAnswer).where(UserAnswer.session_progress_id == sp.id)
+        existing_ans = (await self.db.execute(stmt_del)).scalars().all()
+        for ea in existing_ans:
+            await self.db.delete(ea)
+
+        # 3. Evaluate each question
+        for q in questions:
+            stmt_opt = select(QuestionOption).where(QuestionOption.question_id == q.id)
+            options = list((await self.db.execute(stmt_opt)).scalars().all())
+
+            correct_option = next((opt for opt in options if opt.is_correct), None)
+            selected_opt_id = user_answer_map.get(q.id)
+
+            is_correct = False
+            if correct_option and selected_opt_id == correct_option.id:
+                is_correct = True
+                correct_count += 1
+
+            # Save answer to DB
+            user_ans_record = UserAnswer(
+                session_progress_id=sp.id,
+                question_id=q.id,
+                selected_option_id=selected_opt_id,
+                is_correct=is_correct
+            )
+            self.db.add(user_ans_record)
+
+            feedback_list.append(QuestionFeedbackItem(
+                question_id=q.id,
+                selected_option_id=selected_opt_id or 0,
+                is_correct=is_correct,
+                correct_option_id=correct_option.id if correct_option else None,
+                explanation=q.explanation
+            ))
+
+        # 4. Calculate Final Score
+        final_score = round((correct_count / total_questions) * 100.0, 2)
+        passed = final_score >= session_item.passing_score
+
+        sp.score = final_score
+        sp.time_spent_seconds += req.time_spent_seconds
+        sp.completed_at = datetime.utcnow()
+        if passed:
+            sp.status = ProgressStatus.completed
+
+        # 5. Check Overall Module Completion
+        stmt_all_sess = select(ModuleSession).where(
+            ModuleSession.module_id == session_item.module_id,
             ModuleSession.is_deleted == False
         )
-        total_mod_sessions = (await self.db.execute(stmt_all_sess)).scalar() or 1
+        all_sessions = list((await self.db.execute(stmt_all_sess)).scalars().all())
+        total_mod_sessions = len(all_sessions)
 
-        stmt_comp_sess = select(func.count(SessionProgress.id)).where(
-            SessionProgress.user_id == user_id,
-            SessionProgress.status == ProgressStatus.completed,
-            SessionProgress.session_id.in_(
-                select(ModuleSession.id).where(ModuleSession.module_id == module_id)
-            )
+        stmt_comp_sp = select(SessionProgress).where(
+            SessionProgress.user_module_progress_id == ump.id,
+            SessionProgress.status == ProgressStatus.completed
         )
-        completed_mod_sessions = (await self.db.execute(stmt_comp_sess)).scalar() or 0
+        completed_sp_count = len(list((await self.db.execute(stmt_comp_sp)).scalars().all()))
 
-        if passed and progress.status == ProgressStatus.completed:
-            completed_mod_sessions = max(completed_mod_sessions, 1)
-
-        prog_pct = min(100.0, (completed_mod_sessions / total_mod_sessions) * 100.0)
-        module_progress.status = ProgressStatus.completed if prog_pct >= 100.0 else ProgressStatus.in_progress
-        if prog_pct >= 100.0 and not module_progress.completed_at:
-            module_progress.completed_at = datetime.utcnow()
+        if completed_sp_count >= total_mod_sessions and total_mod_sessions > 0:
+            ump.status = ProgressStatus.completed
+            ump.completed_at = datetime.utcnow()
 
         return SessionSubmitResponse(
             session_id=session_id,
-            session_progress_id=progress.id,
-            status=progress.status,
-            score=score,
+            score=final_score,
             passed=passed,
             correct_count=correct_count,
             total_questions=total_questions,
             feedback=feedback_list
         )
+
+    async def update_watch_progress(
+        self, content_id: int, user_id: int, req: WatchProgressRequest
+    ):
+        stmt_c = select(SessionContent).where(SessionContent.id == content_id)
+        content = (await self.db.execute(stmt_c)).scalar_one_or_none()
+        if not content:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Konten tidak ditemukan")
+
+        session_item = await self.get_session_detail(content.session_id)
+        ump = await self.get_or_create_module_progress(user_id, session_item.module_id)
+
+        stmt_wp = select(ContentWatchProgress).where(
+            ContentWatchProgress.user_id == user_id,
+            ContentWatchProgress.session_content_id == content_id
+        )
+        wp = (await self.db.execute(stmt_wp)).scalar_one_or_none()
+
+        if not wp:
+            wp = ContentWatchProgress(
+                user_id=user_id,
+                session_content_id=content_id,
+                last_position_seconds=req.last_position_seconds,
+                is_completed=req.is_completed
+            )
+            self.db.add(wp)
+        else:
+            wp.last_position_seconds = req.last_position_seconds
+            if req.is_completed:
+                wp.is_completed = True

@@ -2,27 +2,31 @@
 
 All notable changes to LMS Platform will be documented in this file.
 
+## [1.4.0] - 2026-08-16
+### Added & Security Hardened
+- **Proteksi Integritas Kuis (Anti-Answer Leaks):**
+  - Menghilangkan pembocoran kunci jawaban (`correct_option_id` dan `explanation`) pada response API submit kuis (`POST /api/v1/sessions/{id}/submit`) dan antarmuka frontend (`SessionPage.tsx`).
+  - Peserta hanya menerima status kelulusan, persentase nilai akhir, dan jumlah soal benar/salah tanpa mengetahui opsi mana yang menjadi kunci jawaban yang bocor, mencegah eksploitasi hafalan kunci jawaban.
+- **Generasi Modul Baru Enterprise (Cloud Native, Kubernetes & GitOps):**
+  - Modul baru: *"Arsitektur Cloud Native: Kubernetes Orchestration, Docker & GitOps Enterprise"*.
+  - Sesi 1: Fundamental Docker & Kernel Linux Namespaces/cgroups dengan Diagram Resolusi Tinggi.
+  - Sesi 2: Orkestrasi Kubernetes Cluster dengan Pemutar Video Demonstrasi Streaming MP4 (HTTP 206 Partial Content).
+  - Sesi 3: GitOps CI/CD Pipeline & Zero-Downtime Deployment dengan Diagram Alur High-Res.
+  - Token Akses Modul Khusus: `CLOUDNATIVE-PRO-2026` & `K8S-DEVOPS-2026`.
+  - Integrasi penuh ke database MSSQL dan MinIO S3 Object Storage.
+
 ## [1.3.0] - 2026-08-16
-### Fixed & Hardened (Strict Module Token Binding, Cumulative Progress Sync, and Real Admin CMS)
-- **Pengikatan Token Akses Ketat per Modul (Strict Module Binding):**
-  - Mengatasi celah di mana token satu modul bisa digunakan di modul lain.
-  - Endpoint `POST /api/v1/modules/{id}/unlock` dan `POST /api/v1/modules/verify-token` kini memverifikasi kecocokan `token.module_id == target_module_id`. Jika token salah modul dimasukkan, backend menolak dengan pesan jelas dan tidak membuka akses.
-- **Kalkulasi & Sinkronisasi Progres Kumulatif Sesi per Modul:**
-  - Endpoint `GET /api/v1/modules/{id}/user-status` mengagregasi status kelulusan tiap sesi, skor, dan persentase kemajuan kumulatif modul secara real-time dari database.
-  - `ModuleDetailPage.tsx` dan `DashboardPage.tsx` di frontend kini merefleksikan status riil dari database (eliminasi mock `localStorage`).
-- **Penilaian Pilihan Ganda & Bank Soal Kuis Lengkap:**
-  - Seluruh 6 sesi pembelajaran kini dilengkapi bank soal kuis pilihan ganda terstruktur dengan feedback pembahasan per soal.
-  - Evaluasi kuis menghitung rasio kelulusan secara tepat berdasarkan jumlah soal dan standar KKM modul.
-- **Admin CMS Terpadu (Cohorts & Reports):**
-  - Implementasi halaman `CohortsPage.tsx` dan `ReportsPage.tsx` yang terhubung langsung ke REST API `admin/cohorts` dan `admin/reports/module-completion`.
-  - Memperbaiki konstruksi SQLAlchemy `case` pada kalkulasi analitik laporan kelulusan.
+### Fixed & Hardened
+- Pengikatan token akses ketat per modul (Strict Module Token Binding).
+- Kalkulasi progres kumulatif modul dari database (Real-time Live Sync).
+- Implementasi Admin Cohorts & Reports CMS.
 
 ## [1.2.0] - 2026-08-16
 ### Fixed
-- Evaluasi kuis server-side dengan skema relasi ForeignKey `SessionProgress` -> `UserModuleProgress`.
-- Eager loading `selectinload` untuk mencegah missing greenlet pada SQLAlchemy async.
+- Evaluasi kuis server-side dengan skema relasi ForeignKey SessionProgress -> UserModuleProgress.
+- Eager loading selectinload pada async SQLAlchemy.
 
 ## [1.1.0] - 2026-08-15
 ### Added
-- Integrasi Cloudflare Tunnel domain `https://lms.consep33t.my.id`.
-- Nginx dynamic DNS resolver `127.0.0.11` dan HTTP 206 chunked range streaming.
+- Integrasi Cloudflare Tunnel domain https://lms.consep33t.my.id.
+- Nginx dynamic DNS resolver dan HTTP 206 chunked range streaming.

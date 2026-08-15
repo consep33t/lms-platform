@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from app.core.database import get_db
 from app.core.dependencies import require_admin
 from app.models.user import User
@@ -60,7 +60,7 @@ async def get_module_completion_report(
             Module.title,
             func.count(UserModuleProgress.id).label("total_enrolled"),
             func.sum(
-                func.case(
+                case(
                     (UserModuleProgress.status == ProgressStatus.completed, 1),
                     else_=0
                 )
@@ -77,6 +77,6 @@ async def get_module_completion_report(
             "module_id": row.id,
             "module_title": row.title,
             "total_enrolled": row.total_enrolled,
-            "total_completed": row.total_completed or 0,
+            "total_completed": int(row.total_completed or 0),
         })
     return records

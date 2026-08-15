@@ -12,7 +12,7 @@ from app.schemas.progress import (
     SessionSubmitRequest,
     SessionSubmitResponse,
     SessionProgressResponse,
-    QuestionFeedbackItem
+    QuestionFeedback
 )
 
 
@@ -61,16 +61,18 @@ class SessionService:
         if not sp:
             return SessionProgressResponse(
                 session_id=session_id,
+                is_unlocked=True,
                 is_completed=False,
                 score=None,
-                time_spent_seconds=0
+                status=ProgressStatus.not_started
             )
 
         return SessionProgressResponse(
             session_id=session_id,
+            is_unlocked=True,
             is_completed=(sp.status == ProgressStatus.completed),
             score=sp.score,
-            time_spent_seconds=sp.time_spent_seconds
+            status=sp.status
         )
 
     async def submit_session_quiz(
@@ -92,7 +94,7 @@ class SessionService:
 
         total_questions = len(questions)
         correct_count = 0
-        feedback_list: list[QuestionFeedbackItem] = []
+        feedback_list: list[QuestionFeedback] = []
 
         # Map user answers
         user_answer_map = {ans.question_id: ans.selected_option_id for ans in req.answers}
@@ -142,7 +144,7 @@ class SessionService:
             )
             self.db.add(user_ans_record)
 
-            feedback_list.append(QuestionFeedbackItem(
+            feedback_list.append(QuestionFeedback(
                 question_id=q.id,
                 selected_option_id=selected_opt_id or 0,
                 is_correct=is_correct,
@@ -150,7 +152,7 @@ class SessionService:
                 explanation=q.explanation
             ))
 
-        # 4. Calculate Final Score (passing score default 70 if not set on session)
+        # 4. Calculate Final Score (passing score 70%)
         passing_score = 70.0
         final_score = round((correct_count / total_questions) * 100.0, 2)
         passed = final_score >= passing_score
@@ -181,6 +183,8 @@ class SessionService:
 
         return SessionSubmitResponse(
             session_id=session_id,
+            session_progress_id=sp.id,
+            status=sp.status,
             score=final_score,
             passed=passed,
             correct_count=correct_count,
@@ -209,11 +213,11 @@ class SessionService:
             wp = ContentWatchProgress(
                 user_id=user_id,
                 session_content_id=content_id,
-                last_position_seconds=req.last_position_seconds,
+                last_position_seconds=int(req.watched_percent),
                 is_completed=req.is_completed
             )
             self.db.add(wp)
         else:
-            wp.last_position_seconds = req.last_position_seconds
+            wp.last_position_seconds = int(req.watched_percent)
             if req.is_completed:
                 wp.is_completed = True

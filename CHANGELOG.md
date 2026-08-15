@@ -2,20 +2,28 @@
 
 All notable changes to LMS Platform will be documented in this file.
 
-## [1.5.0] - 2026-08-16
-### Added & Enhanced (Slide Sequencer, Live Countdown Timer & Dynamic Quiz Math)
-- **Slide Sequencer Interaktif:**
-  - Struktur sesi kini disajikan secara bertahap (slide demi slide) mencakup teks materi mendalam, blueprint gambar diagram high-res, pemutar video demonstrasi streaming, serta checkpoint kuis evaluasi di sela-sela slide.
-- **Live Countdown Timer & Auto-Timeout Handler:**
-  - Timer hitungan mundur aktif (format MM:SS) dengan indikator visual dinamis (Hijau, Kuning, dan Merah Berkedip saat waktu menipis).
-  - Jika waktu sesi berakhir (timeout), sistem secara otomatis mencatat persentase slide yang telah berhasil diselesaikan peserta dan mengunci sesi dengan akumulasi nilai kuis yang telah dijawab hingga detik tersebut.
-- **Kalkulasi Nilai Kuis Dinamis Matematis:**
-  - Setiap kuis di sela slide bernilai bobot proporsional (100% / N kuis).
-  - Jika terdapat soal yang salah pada salah satu kuis, nilai kuis tersebut dibagi secara proporsional dari jumlah butir soal kuis tersebut.
-  - Skor akhir sesi merupakan akumulasi otomatis dari seluruh kuis checkpoint yang berhasil dikerjakan.
+## [2.0.0] - 2026-08-16
+### Major Milestone Release: 10 Enterprise Modules & 150 Deep Sessions
+- **Massive Curriculum Expansion (10 Modules x 15 Sessions = 150 Sessions):**
+  - Modul 1: Modern Backend Engineering & High-Performance Distributed Systems (`BACKEND-PRO-2026`)
+  - Modul 2: Cloud Native Architecture, Kubernetes Orchestration & GitOps (`K8S-GITOPS-2026`)
+  - Modul 3: Advanced DevOps, CI/CD Automation & Observability Engineering (`DEVOPS-OBS-2026`)
+  - Modul 4: Database Internals, High-Availability Clustering & Distributed SQL (`DATABASE-CORE-2026`)
+  - Modul 5: Enterprise Network Infrastructure, BGP Routing & SD-WAN Architecture (`NETWORK-ENTERPRISE-2026`)
+  - Modul 6: Cybersecurity Defense, Threat Hunting & Zero Trust Architecture (`CYBERSEC-SHIELD-2026`)
+  - Modul 7: Microservices Architecture, Event-Driven Systems & Kafka Streaming (`MICROSERVICES-KAFKA-2026`)
+  - Modul 8: Modern Frontend Engineering, Web Performance & Micro-Frontends (`FRONTEND-ULTRA-2026`)
+  - Modul 9: AI Engineering, Large Language Models (LLM) & RAG Architecture (`AI-ENGINEERING-2026`)
+  - Modul 10: Site Reliability Engineering (SRE), Chaos Engineering & Zero Downtime (`SRE-RESILIENCE-2026`)
+- **Rich Multimedia Assets:**
+  - 10 Arsitektur Blueprint SVG resolusi tinggi.
+  - 10 Video demonstrasi MP4 berstandar streaming *HTTP 206 Partial Content*.
+  - Penyimpanan tersinkronisasi pada disk lokal `/data/uploads` dan MinIO S3 bucket `lms`.
+- **Interspersed Dynamic Quizzes:**
+  - Setiap sesi dilengkapi bank soal kuis berbobot proporsional di sela-sela materi slide.
+- **Admin Full CRUD Suite:**
+  - CRUD Modul, Sesi, Konten Slide, Bank Soal Kuis, Pengguna, Token Akses, dan Grup Angkatan (Cohorts).
 
-## [1.4.0] - 2026-08-16
-### Added & Security Hardened
-- Proteksi integritas kuis tanpa kebocoran kunci jawaban (Anti-Answer Leaks).
-- Generasi Modul Enterprise: Cloud Native, Kubernetes Orchestration & GitOps.
-- Standarisasi .env.example, .gitattributes (LF), dan GitHub Actions CI.
+## [1.5.0] - 2026-08-16
+### Added
+- Slide Sequencer, Live Countdown Timer, and Auto-Timeout Progress Calculation.

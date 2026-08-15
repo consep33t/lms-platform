@@ -12,7 +12,7 @@ import api from '@/lib/api'
 interface CohortItem {
   id: number
   name: string
-  description: stringing | null
+  description: string | null
   member_count: number
 }
 

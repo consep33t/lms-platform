@@ -9,7 +9,7 @@ import api from '@/lib/api'
 
 interface CompletionReportItem {
   module_id: number
-  module_title: stringing
+  module_title: string
   total_enrolled: number
   total_completed: number
 }
@@ -73,7 +73,7 @@ export default function AdminReportsPage() {
                             <BookOpen className="h-4 w-4 text-primary" /> {r.module_title}
                           </h4>
                           <p className="text-xs text-muted-foreground">
-                            Terdaftar: <stringong>{r.total_enrolled}</stringong> Peserta � Lulus: <stringong>{r.total_completed}</stringong> Peserta
+                            Terdaftar: <strong>{r.total_enrolled}</strong> Peserta � Lulus: <strong>{r.total_completed}</strong> Peserta
                           </p>
                         </div>
                         <div className="flex items-center gap-3">

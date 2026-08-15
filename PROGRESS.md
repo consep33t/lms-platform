@@ -1,4 +1,4 @@
-# LMS Platform — Progress Tracker
+# LMS Platform ï¿½ Progress Tracker
 *Update berkala: 2026-08-16*
 
 ---

@@ -61,7 +61,7 @@ async def serve_protected_file(key: str, expires: int, signature: str):
     if int(time.time()) > expires:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Link akses telah kadaluarsa")
 
-    # FastAPI does NOT stream the bytes — Nginx handles streaming via X-Accel-Redirect
+    # FastAPI does NOT stream the bytes ï¿½ Nginx handles streaming via X-Accel-Redirect
     resp = Response(status_code=status.HTTP_200_OK)
     resp.headers["X-Accel-Redirect"] = f"/protected/{key}"
     resp.headers["Content-Disposition"] = "inline"

@@ -1,4 +1,4 @@
-# LMS Platform — Agent Context File
+# LMS Platform ï¿½ Agent Context File
 # ====================================================
 # Baca file ini PERTAMA sebelum melakukan apapun.
 # Update bagian "CURRENT STATE" setiap kali menyelesaikan fase.
@@ -34,11 +34,11 @@ Learning Management System (LMS) berbasis token akses modul.
 | Video | video.js atau native <video> |
 
 ## ARCHITECTURE RULES (JANGAN DILANGGAR)
-1. Semua akses file WAJIB lewat `StorageBackend` interface — tidak boleh `open()` atau boto3 langsung
-2. Worker berat (transcode, PDF, email, cleanup) WAJIB lewat Celery — tidak sinkron
+1. Semua akses file WAJIB lewat `StorageBackend` interface ï¿½ tidak boleh `open()` atau boto3 langsung
+2. Worker berat (transcode, PDF, email, cleanup) WAJIB lewat Celery ï¿½ tidak sinkron
 3. File serving privat: FastAPI verifikasi HMAC signature ? return X-Accel-Redirect ? Nginx stream
-4. Folder upload `/data/uploads/` — SELALU di luar source code
-5. Nama file di server = UUID — tidak pernah pakai nama asli user
+4. Folder upload `/data/uploads/` ï¿½ SELALU di luar source code
+5. Nama file di server = UUID ï¿½ tidak pernah pakai nama asli user
 6. JWT access token disimpan di localStorage (karena SPA), refresh token di httpOnly cookie
 7. Jangan campur Zustand (client state) dengan TanStack Query (server state)
 8. Semua endpoint admin dilindungi role guard `admin` atau `superadmin`
@@ -56,15 +56,15 @@ Learning Management System (LMS) berbasis token akses modul.
   - Untuk aktifkan: set STORAGE_DRIVER=s3 di .env
 
 ## DATABASE SCHEMAS
-Lihat PROJECT_SPEC.md §3 untuk semua tabel.
+Lihat PROJECT_SPEC.md ï¿½3 untuk semua tabel.
 Key tables: users, modules, module_sessions, questions, question_options,
 module_tokens, token_usages, user_module_progress, session_progress,
 user_answers, media_files, session_contents, content_watch_progress,
 cohorts, cohort_members, module_assignments, notifications, audit_logs
 
-## CURRENT STATE — UPDATE INI SETIAP SELESAI FASE
+## CURRENT STATE ï¿½ UPDATE INI SETIAP SELESAI FASE
 ```
-Phase  1: [? DONE] Setup awal — scaffold backend + frontend + docker-compose
+Phase  1: [? DONE] Setup awal ï¿½ scaffold backend + frontend + docker-compose
 Phase  2: [? TODO] Database models + Alembic migration awal
 Phase  3: [? TODO] Auth (JWT + refresh token + role guard)
 Phase  4: [? TODO] Storage abstraction (sudah di-scaffold, perlu implementasi penuh)
@@ -85,7 +85,7 @@ Phase 16: [? TODO] Testing
 ## RULES UNTUK AGENT
 1. **Baca PROGRESS.md dulu** sebelum mulai task apapun
 2. **Update PROGRESS.md + CHANGELOG.md** setelah selesai setiap sub-task
-3. **Jangan skip fase** — pastikan fase sebelumnya bisa dijalankan sebelum lanjut
+3. **Jangan skip fase** ï¿½ pastikan fase sebelumnya bisa dijalankan sebelum lanjut
 4. **Anti-halusinasi**: selalu `view_file` sebelum edit, selalu grep sebelum asumsi
 5. **Sebelum deploy ke server**: test lokal dulu dengan docker compose up
 6. **Port lokal yang digunakan** (jangan bentrok):
@@ -94,7 +94,7 @@ Phase 16: [? TODO] Testing
    - Nginx LMS: 8080
    - MSSQL LMS: 1434
    - Redis LMS: 6380
-   - MinIO: sudah di server (9010, 9011) — tidak ada di local compose
+   - MinIO: sudah di server (9010, 9011) ï¿½ tidak ada di local compose
 
 ## HOW TO START WORKING
 ```bash

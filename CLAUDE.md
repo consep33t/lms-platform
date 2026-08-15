@@ -1,4 +1,4 @@
-# LMS Platform — Claude/Cursor Rules
+# LMS Platform ï¿½ Claude/Cursor Rules
 
 ## FIRST ACTION IN EVERY SESSION
 Read AGENT.md ? PROGRESS.md ? then proceed.

@@ -1,12 +1,12 @@
-# Changelog — LMS Platform
+# Changelog ï¿½ LMS Platform
 
 All notable changes to this project are documented here.
 
 ---
 
-## [1.0.0-rc1] — 2026-08-16
+## [1.0.0-rc1] ï¿½ 2026-08-16
 
-### Added — Full Stack Core Implementation
+### Added ï¿½ Full Stack Core Implementation
 
 #### Database & Models (SQLAlchemy 2.x Async)
 - **User Models**: `User`, `UserSettings`, `RefreshToken`, `AuditLog`.

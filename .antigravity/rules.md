@@ -1,4 +1,4 @@
-# LMS Platform — Custom Agent Rules
+# LMS Platform ï¿½ Custom Agent Rules
 # Antigravity akan membaca file ini secara otomatis di setiap sesi
 
 ## MANDATORY FIRST STEPS (setiap sesi baru)
@@ -9,30 +9,30 @@
 
 ## SKILLS YANG WAJIB DIGUNAKAN
 Gunakan skill berikut sesuai task:
-- `senior-backend` — saat implementasi FastAPI, SQLAlchemy, Alembic
-- `senior-frontend` — saat implementasi React, TypeScript, TanStack
-- `database-designer` — saat merancang/modifikasi schema
-- `security-and-hardening` — saat implementasi auth, upload, signed URL
-- `api-and-interface-design` — saat merancang endpoint baru
-- `senior-devops` — saat konfigurasi Docker, Nginx, Celery
-- `debugging-and-error-recovery` — saat ada bug/error
-- `code-review-and-quality` — sebelum menandai fase selesai
-- `incremental-implementation` — selalu deliver incremental, bukan big-bang
+- `senior-backend` ï¿½ saat implementasi FastAPI, SQLAlchemy, Alembic
+- `senior-frontend` ï¿½ saat implementasi React, TypeScript, TanStack
+- `database-designer` ï¿½ saat merancang/modifikasi schema
+- `security-and-hardening` ï¿½ saat implementasi auth, upload, signed URL
+- `api-and-interface-design` ï¿½ saat merancang endpoint baru
+- `senior-devops` ï¿½ saat konfigurasi Docker, Nginx, Celery
+- `debugging-and-error-recovery` ï¿½ saat ada bug/error
+- `code-review-and-quality` ï¿½ sebelum menandai fase selesai
+- `incremental-implementation` ï¿½ selalu deliver incremental, bukan big-bang
 
 ## TECH RULES (NON-NEGOTIABLE)
 1. Storage abstraction: SELALU lewat `StorageBackend` interface
 2. Background jobs: SELALU lewat Celery, tidak pernah sync di request
 3. File serving: FastAPI ? X-Accel-Redirect ? Nginx (bukan Python stream)
 4. Auth: access token di localStorage, refresh token di httpOnly cookie
-5. Validasi: Pydantic v2 di backend, Zod di frontend — SELALU selaras
+5. Validasi: Pydantic v2 di backend, Zod di frontend ï¿½ SELALU selaras
 6. Async: semua endpoint FastAPI WAJIB async, SQLAlchemy async session
 7. File names: SELALU UUID, tidak pernah nama asli user
 
 ## ANTI-HALLUCINATION RULES
 - SELALU `view_file` sebelum edit file
 - SELALU `grep_search` sebelum asumsi ada fungsi/class tertentu
-- JANGAN asumsi schema database — cek `backend/app/models/` dulu
-- JANGAN asumsi env vars — cek `backend/.env.example` dulu
+- JANGAN asumsi schema database ï¿½ cek `backend/app/models/` dulu
+- JANGAN asumsi env vars ï¿½ cek `backend/.env.example` dulu
 
 ## UPDATE WAJIB SETELAH SELESAI
 Setelah setiap sub-task:
@@ -46,5 +46,5 @@ Setelah setiap sub-task:
 - lms_nginx: 8080 (local) / 80 (server)
 - lms_database: 1434 (local) / 1433 (server, port baru)
 - lms_redis: 6380 (local) / 6379 (server)
-- MinIO: server only — wifi_minio:9010 (internal) / 9010, 9011 (external)
+- MinIO: server only ï¿½ wifi_minio:9010 (internal) / 9010, 9011 (external)
 - wifi-management-app: nginx 80, backend 8080, mssql 1433

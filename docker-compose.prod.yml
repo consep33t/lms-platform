@@ -1,11 +1,6 @@
 version: "3.9"
 
-# ============================================================
-# LMS Platform — Production Deployment Docker Compose
-# ============================================================
-
 services:
-  # 1. Database (MSSQL 2022)
   lms_database:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: lms_database
@@ -13,7 +8,7 @@ services:
       - "127.0.0.1:1434:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-LmsProdSecret2026!}
+      - MSSQL_SA_PASSWORD=LmsProdSecret2026!
       - MSSQL_PID=Developer
       - TZ=Asia/Jakarta
     volumes:
@@ -23,13 +18,12 @@ services:
       - lms_network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD:-LmsProdSecret2026!}' -Q 'SELECT 1' -No -C"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'LmsProdSecret2026!' -Q 'SELECT 1' -No -C"]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 30s
 
-  # 2. Redis
   lms_redis:
     image: redis:7-alpine
     container_name: lms_redis
@@ -45,7 +39,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 3. Backend (FastAPI)
   lms_backend:
     build:
       context: ./backend
@@ -75,7 +68,6 @@ services:
     restart: always
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 
-  # 4. Celery Worker
   lms_worker:
     build:
       context: ./backend
@@ -105,7 +97,6 @@ services:
     restart: always
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
 
-  # 5. Celery Beat
   lms_beat:
     build:
       context: ./backend
@@ -127,7 +118,6 @@ services:
     restart: always
     command: celery -A app.workers.celery_app beat --loglevel=info
 
-  # 6. Frontend (React Vite Production Build)
   lms_frontend:
     build:
       context: ./frontend
@@ -138,12 +128,11 @@ services:
       - lms_network
     restart: always
 
-  # 7. Nginx Production Gateway
   lms_nginx:
     image: nginx:stable-alpine
     container_name: lms_nginx
     ports:
-      - "8088:80"    # Akses LMS Server pada port 8088
+      - "8088:80"
     volumes:
       - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - lms_uploads:/data/uploads:ro

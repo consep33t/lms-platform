@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.user import User, UserRole, UserSettings
 from app.models.module import Module, ModuleStatus
@@ -12,6 +13,15 @@ from app.core.security import get_password_hash
 
 async def seed_data():
     async with AsyncSessionLocal() as db:
+        # Check if admin already exists
+        stmt = select(User).where(User.email == "admin@lms.local")
+        res = await db.execute(stmt)
+        existing_admin = res.scalar_one_or_none()
+
+        if existing_admin:
+            print("[SEED] Data awal sudah ada di database, melewati proses seeding.")
+            return
+
         print("[SEED] Inisialisasi data awal LMS...")
 
         # 1. Admin User

@@ -9,8 +9,16 @@ class TokenGenerateRequest(BaseModel):
     expired_at: datetime
 
 
+class TokenBulkGenerateRequest(BaseModel):
+    module_id: int
+    count: int = 1
+    max_uses: int = 100
+    days_valid: int = 30
+
+
 class TokenVerifyRequest(BaseModel):
     token: str
+    module_id: int | None = None
 
 
 class TokenVerifyResponse(BaseModel):

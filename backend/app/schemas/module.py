@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from app.models.module import ModuleStatus
+from app.models.progress import ProgressStatus
 from app.schemas.session import SessionResponse
 
 
@@ -39,6 +40,27 @@ class ModuleDetailResponse(ModuleResponse):
     model_config = ConfigDict(from_attributes=True)
 
     sessions: list[SessionResponse] = []
+
+
+class SessionProgressStatus(BaseModel):
+    session_id: int
+    title: str
+    order: int
+    duration_minutes: int
+    is_completed: bool = False
+    score: float | None = None
+
+
+class ModuleUserStatusResponse(BaseModel):
+    module_id: int
+    is_unlocked: bool
+    status: ProgressStatus
+    progress_percent: float
+    sessions_completed: int
+    total_sessions: int
+    average_score: float
+    certificate_url: str | None = None
+    sessions: list[SessionProgressStatus] = []
 
 
 class ModuleRatingCreate(BaseModel):

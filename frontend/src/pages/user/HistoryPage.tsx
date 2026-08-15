@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { PageLayout } from '@/components/layout/PageLayout'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Award, CheckCircle2, BookOpen, ArrowRight, Trophy, Clock } from 'lucide-react'
+import { BookOpen, ArrowRight, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
 
-numbererface ProgressItem {
+interface ProgressItem {
   module_id: number
   module_title: string
   status: string

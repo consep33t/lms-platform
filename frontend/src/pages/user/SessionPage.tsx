@@ -23,6 +23,7 @@ import {
   Layers
 } from 'lucide-react'
 import api from '@/lib/api'
+import { RichContentRenderer } from '@/components/common/RichContentRenderer'
 
 interface OptionItem {
   id: number

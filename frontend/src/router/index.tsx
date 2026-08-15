@@ -14,6 +14,7 @@ import AdminTokensPage from '@/pages/admin/TokensPage'
 import AdminCohortsPage from '@/pages/admin/CohortsPage'
 import AdminReportsPage from '@/pages/admin/ReportsPage'
 import SessionBuilderPage from '@/pages/admin/SessionBuilderPage'
+import NotFoundPage from '@/pages/NotFoundPage'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <ProtectedRoute><DashboardPage /></ProtectedRoute>,
+    errorElement: <NotFoundPage />,
   },
   {
     path: '/modules/:id',
@@ -70,5 +72,9 @@ export const router = createBrowserRouter([
   {
     path: '/admin/reports',
     element: <ProtectedRoute requireAdmin><AdminReportsPage /></ProtectedRoute>,
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
   },
 ])

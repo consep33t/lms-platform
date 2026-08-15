@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.models.session import ModuleSession
 from app.models.content import SessionContent, ContentWatchProgress
@@ -20,9 +21,13 @@ class SessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_session_detail(self, session_id: int) -> SessionDetailResponse:
+    async def get_session_detail(self, session_id: int) -> ModuleSession:
         stmt = (
             select(ModuleSession)
+            .options(
+                selectinload(ModuleSession.contents),
+                selectinload(ModuleSession.questions).selectinload(Question.options)
+            )
             .where(ModuleSession.id == session_id, ModuleSession.is_deleted == False)
         )
         res = await self.db.execute(stmt)
@@ -82,7 +87,7 @@ class SessionService:
         ump = await self.get_or_create_module_progress(user_id, session_item.module_id)
 
         # 1. Fetch all questions and options for this session
-        stmt_q = select(Question).where(
+        stmt_q = select(Question).options(selectinload(Question.options)).where(
             Question.session_id == session_id,
             Question.is_deleted == False
         )
@@ -124,9 +129,7 @@ class SessionService:
 
         # 3. Evaluate each question
         for q in questions:
-            stmt_opt = select(QuestionOption).where(QuestionOption.question_id == q.id)
-            options = list((await self.db.execute(stmt_opt)).scalars().all())
-
+            options = q.options
             correct_option = next((opt for opt in options if opt.is_correct), None)
             selected_opt_id = user_answer_map.get(q.id)
 

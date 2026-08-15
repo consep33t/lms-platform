@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { KeyRound, Plus, RefreshCw, CheckCircle2, XCircle, Copy } from 'lucide-react'
+import { KeyRound, Plus, RefreshCw, CheckCircle2, XCircle, Copy, Trash2, Power } from 'lucide-react'
 import api from '@/lib/api'
 
 interface AdminTokenItem {
@@ -28,6 +28,7 @@ export default function AdminTokensPage() {
   const [maxUses, setMaxUses] = useState(100)
   const [daysValid, setDaysValid] = useState(30)
   const [submitting, setSubmitting] = useState(false)
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTokens()
@@ -57,11 +58,36 @@ export default function AdminTokensPage() {
       })
       setShowModal(false)
       fetchTokens()
-    } catch (err) {
-      alert('Gagal membuat token baru.')
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Gagal membuat token baru.')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleToggleToken = async (tokenId: number) => {
+    try {
+      await api.patch(`/admin/tokens/${tokenId}/toggle`)
+      fetchTokens()
+    } catch (err) {
+      alert('Gagal mengubah status token.')
+    }
+  }
+
+  const handleDeleteToken = async (tokenId: number) => {
+    if (!confirm('Hapus token akses ini secara permanen?')) return
+    try {
+      await api.delete(`/admin/tokens/${tokenId}`)
+      fetchTokens()
+    } catch (err) {
+      alert('Gagal menghapus token.')
+    }
+  }
+
+  const handleCopy = (code: string) => {
+    navigator.clipboard.writeText(code)
+    setCopiedCode(code)
+    setTimeout(() => setCopiedCode(null), 2000)
   }
 
   return (
@@ -131,23 +157,32 @@ export default function AdminTokensPage() {
                   {tokens.map((t) => (
                     <div key={t.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-muted/30">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+                        <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold shrink-0">
                           <KeyRound className="h-5 w-5" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-base text-foreground">{t.token_code}</span>
-                            <Badge variant={t.is_active ? 'default' : 'secondary'} className={t.is_active ? 'bg-emerald-600' : ''}>
+                            <Badge variant={t.is_active ? 'default' : 'secondary'} className={t.is_active ? 'bg-emerald-600 text-xs' : 'text-xs'}>
                               {t.is_active ? 'Aktif' : 'Nonaktif'}
                             </Badge>
+                            <button onClick={() => handleCopy(t.token_code)} className="text-muted-foreground hover:text-foreground text-xs flex items-center gap-1">
+                              <Copy className="h-3.5 w-3.5" /> {copiedCode === t.token_code ? 'Tersalin!' : ''}
+                            </button>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Modul ID #{t.module_id} � Penggunaan: <strong>{t.current_uses}</strong> / {t.max_uses} Peserta
+                            Modul ID #{t.module_id} � Penggunaan: <strong>{t.current_uses}</strong> / {t.max_uses} Peserta � Exp: {new Date(t.expired_at).toLocaleDateString('id-ID')}
                           </p>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground font-mono">
-                        Kadaluarsa: {new Date(t.expired_at).toLocaleDateString('id-ID')}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button variant="outline" size="sm" onClick={() => handleToggleToken(t.id)} className="gap-1 text-xs">
+                          <Power className={`h-3.5 w-3.5 ${t.is_active ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+                          {t.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteToken(t.id)} className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}

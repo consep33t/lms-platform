@@ -6,6 +6,7 @@ import ModuleDetailPage from '@/pages/user/ModuleDetailPage'
 import SessionPage from '@/pages/user/SessionPage'
 import HistoryPage from '@/pages/user/HistoryPage'
 import ProfilePage from '@/pages/user/ProfilePage'
+import AboutPage from '@/pages/user/AboutPage'
 import AdminDashboardPage from '@/pages/admin/DashboardPage'
 import AdminModulesPage from '@/pages/admin/ModulesPage'
 import AdminUsersPage from '@/pages/admin/UsersPage'
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
   {
     path: '/profile',
     element: <ProtectedRoute><ProfilePage /></ProtectedRoute>,
+  },
+  {
+    path: '/about',
+    element: <ProtectedRoute><AboutPage /></ProtectedRoute>,
   },
   {
     path: '/admin',

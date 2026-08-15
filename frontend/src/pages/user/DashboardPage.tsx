@@ -10,9 +10,9 @@ import api from '@/lib/api'
 
 interface ModuleItem {
   id: number
-  title: str
-  description: str
-  status: str
+  title: string
+  description: string
+  status: string
   passing_score: number
   order: number
   thumbnail_media_id: number | null
@@ -159,3 +159,4 @@ export default function DashboardPage() {
     </PageLayout>
   )
 }
+

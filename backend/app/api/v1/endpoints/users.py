@@ -7,7 +7,7 @@ from app.models.user import User
 from app.models.module import Module, ModuleStatus
 from app.models.session import ModuleSession
 from app.models.progress import UserModuleProgress, SessionProgress, ProgressStatus
-from app.schemas.user import UserResponse, UserUpdateRequest
+from app.schemas.user import UserResponse, UserUpdate
 from app.schemas.progress import UserModuleProgressItem
 
 router = APIRouter()
@@ -28,7 +28,7 @@ async def get_my_profile(
 
 @router.put("/me", response_model=UserResponse)
 async def update_my_profile(
-    req: UserUpdateRequest,
+    req: UserUpdate,
     current_user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -105,3 +105,4 @@ async def get_my_learning_progress(
         ))
 
     return items
+

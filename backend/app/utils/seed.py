@@ -14,7 +14,7 @@ from app.core.security import get_password_hash
 async def seed_data():
     async with AsyncSessionLocal() as db:
         # Check if admin already exists
-        stmt = select(User).where(User.email == "admin@lms.local")
+        stmt = select(User).where(User.email == "admin@lms.alfanet.id")
         res = await db.execute(stmt)
         existing_admin = res.scalar_one_or_none()
 
@@ -26,7 +26,7 @@ async def seed_data():
 
         # 1. Admin User
         admin = User(
-            email="admin@lms.local",
+            email="admin@lms.alfanet.id",
             full_name="Administrator LMS",
             hashed_password=get_password_hash("AdminPass123!"),
             role=UserRole.superadmin,
@@ -40,7 +40,7 @@ async def seed_data():
 
         # 2. Sample User Peserta
         user = User(
-            email="peserta@lms.local",
+            email="peserta@lms.alfanet.id",
             full_name="Peserta Uji Coba",
             hashed_password=get_password_hash("PesertaPass123!"),
             role=UserRole.user,
@@ -117,8 +117,8 @@ async def seed_data():
 
         await db.commit()
         print("[SEED] Data awal berhasil dibuat!")
-        print("  Superadmin: admin@lms.local / AdminPass123!")
-        print("  Peserta:    peserta@lms.local / PesertaPass123!")
+        print("  Superadmin: admin@lms.alfanet.id / AdminPass123!")
+        print("  Peserta:    peserta@lms.alfanet.id / PesertaPass123!")
         print("  Token Modul: NET2026X")
 
 

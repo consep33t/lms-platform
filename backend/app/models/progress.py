@@ -23,7 +23,7 @@ class UserModuleProgress(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), index=True, nullable=False)
+    module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="NO ACTION"), index=True, nullable=False)
     status: Mapped[ProgressStatus] = mapped_column(Enum(ProgressStatus), default=ProgressStatus.not_started, nullable=False)
     score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -39,7 +39,7 @@ class SessionProgress(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_module_progress_id: Mapped[int] = mapped_column(Integer, ForeignKey("user_module_progress.id", ondelete="CASCADE"), index=True, nullable=False)
-    session_id: Mapped[int] = mapped_column(Integer, ForeignKey("module_sessions.id", ondelete="CASCADE"), index=True, nullable=False)
+    session_id: Mapped[int] = mapped_column(Integer, ForeignKey("module_sessions.id", ondelete="NO ACTION"), index=True, nullable=False)
     status: Mapped[ProgressStatus] = mapped_column(Enum(ProgressStatus), default=ProgressStatus.not_started, nullable=False)
     score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     time_spent_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -71,7 +71,7 @@ class Certificate(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
-    module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), index=True, nullable=False)
+    module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="NO ACTION"), index=True, nullable=False)
     certificate_code: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     media_file_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("media_files.id", ondelete="SET NULL"), nullable=True)
     issued_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

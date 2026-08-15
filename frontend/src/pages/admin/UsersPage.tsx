@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
                   <div className="space-y-1">
                     <Label htmlFor="urole">Role / Hak Akses</Label>
                     <select id="urole" className="w-full h-10 px-3 rounded-md border bg-background text-sm" value={role} onChange={(e) => setRole(e.target.value)}>
-                      <option value="student">Student (Peserta)</option>
+                      <option value="user">Student (Peserta)</option>
                       <option value="instructor">Instructor (Pengajar)</option>
                       <option value="admin">Admin (Administrator)</option>
                     </select>

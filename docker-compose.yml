@@ -1,0 +1,166 @@
+version: "3.9"
+
+# LMS Platform - Local Development Docker Compose
+# Ports offset to avoid conflicts with wifi-management-app:
+#   DB: 1434 (vs 1433), Redis: 6380, Nginx: 8080 (vs 80)
+
+services:
+  lms_database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: lms_database
+    ports:
+      - "127.0.0.1:1434:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-LmsStr0ng!Pass}
+      - MSSQL_PID=Developer
+      - TZ=Asia/Jakarta
+    volumes:
+      - lms_mssql_data:/var/opt/mssql
+    networks:
+      - lms_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD:-LmsStr0ng!Pass}' -Q 'SELECT 1' -No -C"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  lms_redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    ports:
+      - "127.0.0.1:6380:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - lms_redis_data:/data
+    networks:
+      - lms_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  lms_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_dev
+    container_name: lms_backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_SERVER=lms_database
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+      - STORAGE_LOCAL_BASE_PATH=/data/uploads
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./backend:/app
+      - lms_uploads:/data/uploads
+    depends_on:
+      lms_database:
+        condition: service_healthy
+      lms_redis:
+        condition: service_healthy
+    networks:
+      - lms_network
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  lms_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_dev
+    container_name: lms_worker
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_SERVER=lms_database
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+      - STORAGE_LOCAL_BASE_PATH=/data/uploads
+    volumes:
+      - ./backend:/app
+      - lms_uploads:/data/uploads
+    depends_on:
+      lms_database:
+        condition: service_healthy
+      lms_redis:
+        condition: service_healthy
+    networks:
+      - lms_network
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+
+  lms_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_dev
+    container_name: lms_beat
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - lms_redis
+    networks:
+      - lms_network
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app beat --loglevel=info
+
+  lms_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: lms_frontend_dev
+    container_name: lms_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - TZ=Asia/Jakarta
+    networks:
+      - lms_network
+    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0
+
+  lms_nginx:
+    image: nginx:stable-alpine
+    container_name: lms_nginx
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./deploy/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - lms_uploads:/data/uploads:ro
+    depends_on:
+      - lms_backend
+      - lms_frontend
+    networks:
+      - lms_network
+    restart: unless-stopped
+
+networks:
+  lms_network:
+    driver: bridge
+    name: lms_network
+
+volumes:
+  lms_mssql_data:
+  lms_redis_data:
+  lms_uploads:

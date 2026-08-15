@@ -1,0 +1,169 @@
+version: "3.9"
+
+# ============================================================
+# LMS Platform — Production Deployment Docker Compose
+# ============================================================
+
+services:
+  # 1. Database (MSSQL 2022)
+  lms_database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: lms_database
+    ports:
+      - "127.0.0.1:1434:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-LmsProdSecret2026!}
+      - MSSQL_PID=Developer
+      - TZ=Asia/Jakarta
+    volumes:
+      - lms_mssql_data:/var/opt/mssql
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - lms_network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD:-LmsProdSecret2026!}' -Q 'SELECT 1' -No -C"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # 2. Redis
+  lms_redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - lms_redis_data:/data
+    networks:
+      - lms_network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 3. Backend (FastAPI)
+  lms_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_prod:latest
+    container_name: lms_backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_SERVER=lms_database
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+      - STORAGE_LOCAL_BASE_PATH=/data/uploads
+      - TZ=Asia/Jakarta
+    volumes:
+      - lms_uploads:/data/uploads
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      lms_database:
+        condition: service_healthy
+      lms_redis:
+        condition: service_healthy
+    networks:
+      - lms_network
+      - shared_network
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  # 4. Celery Worker
+  lms_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_prod:latest
+    container_name: lms_worker
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_SERVER=lms_database
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+      - STORAGE_LOCAL_BASE_PATH=/data/uploads
+      - TZ=Asia/Jakarta
+    volumes:
+      - lms_uploads:/data/uploads
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      lms_database:
+        condition: service_healthy
+      lms_redis:
+        condition: service_healthy
+    networks:
+      - lms_network
+      - shared_network
+    restart: always
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+
+  # 5. Celery Beat
+  lms_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lms_backend_prod:latest
+    container_name: lms_beat
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
+      - TZ=Asia/Jakarta
+    depends_on:
+      - lms_redis
+      - lms_worker
+    networks:
+      - lms_network
+    restart: always
+    command: celery -A app.workers.celery_app beat --loglevel=info
+
+  # 6. Frontend (React Vite Production Build)
+  lms_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: lms_frontend_prod:latest
+    container_name: lms_frontend
+    networks:
+      - lms_network
+    restart: always
+
+  # 7. Nginx Production Gateway
+  lms_nginx:
+    image: nginx:stable-alpine
+    container_name: lms_nginx
+    ports:
+      - "8088:80"    # Akses LMS Server pada port 8088
+    volumes:
+      - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - lms_uploads:/data/uploads:ro
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - lms_backend
+      - lms_frontend
+    networks:
+      - lms_network
+    restart: always
+
+networks:
+  lms_network:
+    driver: bridge
+    name: lms_prod_network
+  shared_network:
+    external: true
+    name: wifi-management-app_wifi_network
+
+volumes:
+  lms_mssql_data:
+  lms_redis_data:
+  lms_uploads:

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.env
+.env.local
+!.env.example
+*.log
+.DS_Store
+uploads/
+data/

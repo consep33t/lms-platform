@@ -10,8 +10,13 @@ from app.api.v1.endpoints.admin import (
     reports as admin_reports,
     audit_logs as admin_audit_logs,
 )
+from app.core.config import settings
 
 api_router = APIRouter()
+
+@api_router.get("/health", tags=["health"])
+async def api_health():
+    return {"status": "ok", "version": settings.APP_VERSION}
 
 # Public / User endpoints
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])

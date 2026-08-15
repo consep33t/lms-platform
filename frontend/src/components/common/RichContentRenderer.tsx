@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Check, Copy, Terminal, Code2 } from 'lucide-react'
+import { Check, Copy, Terminal, Code2, Layers, Sparkles, FileCode2, Globe, Atom } from 'lucide-react'
 
 interface RichContentRendererProps {
   content: string
@@ -8,9 +8,11 @@ interface RichContentRendererProps {
 interface CodeSnippetBlockProps {
   language: string
   code: string
+  customTitle?: string
+  customDesc?: string
 }
 
-function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
+function CodeSnippetBlock({ language, code, customTitle, customDesc }: CodeSnippetBlockProps) {
   const [copied, setCopied] = useState(false)
   const langLower = (language || 'text').toLowerCase().trim()
 
@@ -28,13 +30,30 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
       case 'sh':
       case 'shell':
       case 'zsh':
-        return 'BASH'
+        return 'BASH / LINUX'
       case 'powershell':
       case 'ps1':
-        return 'POWERSHELL'
+        return 'WINDOWS POWERSHELL'
       case 'cmd':
       case 'batch':
-        return 'COMMAND PROMPT'
+        return 'COMMAND PROMPT (CMD)'
+      case 'html':
+      case 'htm':
+      case 'html5':
+        return 'HTML5'
+      case 'react':
+      case 'jsx':
+        return 'REACT JSX'
+      case 'tsx':
+        return 'REACT TYPESCRIPT (TSX)'
+      case 'vue':
+        return 'VUE COMPONENT'
+      case 'svelte':
+        return 'SVELTE'
+      case 'css':
+      case 'scss':
+      case 'tailwind':
+        return 'CSS / STYLING'
       case 'yaml':
       case 'yml':
         return 'YAML CONFIG'
@@ -54,8 +73,30 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
         return 'DOCKERFILE'
       case 'sql':
         return 'SQL'
+      case 'rust':
+      case 'rs':
+        return 'RUST'
+      case 'go':
+      case 'golang':
+        return 'GOLANG'
+      case 'java':
+        return 'JAVA'
+      case 'kotlin':
+      case 'kt':
+        return 'KOTLIN'
+      case 'csharp':
+      case 'cs':
+        return 'C# .NET'
+      case 'cpp':
+      case 'c':
+        return 'C / C++'
+      case 'php':
+        return 'PHP'
+      case 'ruby':
+      case 'rb':
+        return 'RUBY'
       default:
-        return langLower.toUpperCase()
+        return langLower ? langLower.toUpperCase() : 'CODE'
     }
   }
 
@@ -66,23 +107,43 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
     return ''
   }
 
+  const getLanguageIcon = () => {
+    if (isTerminal) return <Terminal className="h-4 w-4 text-sky-400" />
+    if (['html', 'htm', 'html5'].includes(langLower)) return <Globe className="h-4 w-4 text-orange-400" />
+    if (['react', 'jsx', 'tsx'].includes(langLower)) return <Atom className="h-4 w-4 text-cyan-400" />
+    if (['vue', 'svelte'].includes(langLower)) return <Sparkles className="h-4 w-4 text-emerald-400" />
+    return <Code2 className="h-4 w-4 text-indigo-400" />
+  }
+
   return (
-    <div className="my-5 rounded-xl border border-slate-700/80 bg-slate-950 shadow-lg overflow-hidden font-mono text-sm">
-      {/* Header bar */}
+    <div className="my-5 rounded-xl border border-slate-800 bg-slate-950 shadow-xl overflow-hidden font-mono text-sm">
+      {/* Optional Custom Title Header Bar */}
+      {customTitle && (
+        <div className="px-4 py-2 bg-slate-900 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-100 font-sans tracking-wide">
+            <FileCode2 className="h-4 w-4 text-primary" />
+            <span>{customTitle}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Main Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs text-slate-300">
         <div className="flex items-center gap-2">
           {isTerminal ? (
             <div className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80 inline-block" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80 inline-block" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80 inline-block" />
-              <Terminal className="h-3.5 w-3.5 ml-2 text-sky-400" />
-              <span className="font-semibold text-slate-200 tracking-wider ml-1">{getLanguageLabel()}</span>
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block" />
+              <span className="ml-1.5 flex items-center gap-1">
+                {getLanguageIcon()}
+                <span className="font-semibold text-slate-200 tracking-wider text-[11px]">{getLanguageLabel()}</span>
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-slate-200">
-              <Code2 className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="font-semibold tracking-wider">{getLanguageLabel()}</span>
+              {getLanguageIcon()}
+              <span className="font-semibold tracking-wider text-[11px]">{getLanguageLabel()}</span>
             </div>
           )}
         </div>
@@ -97,7 +158,7 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-emerald-400 font-sans">Tersalin!</span>
+              <span className="text-emerald-400 font-sans font-semibold">Tersalin!</span>
             </>
           ) : (
             <>
@@ -107,6 +168,14 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
           )}
         </button>
       </div>
+
+      {/* Optional Custom Description */}
+      {customDesc && (
+        <div className="px-4 py-2 bg-slate-900/40 border-b border-slate-800/60 text-xs text-slate-400 font-sans leading-relaxed flex items-start gap-1.5">
+          <span className="text-primary font-bold">💡 Note:</span>
+          <span>{customDesc}</span>
+        </div>
+      )}
 
       {/* Code body */}
       <div className="p-4 overflow-x-auto text-slate-100 leading-relaxed text-xs sm:text-sm">
@@ -132,9 +201,9 @@ function CodeSnippetBlock({ language, code }: CodeSnippetBlockProps) {
 export function RichContentRenderer({ content }: RichContentRendererProps) {
   if (!content) return null
 
-  // Parse fenced code blocks: ```lang ... ```
+  // Regex matches ```language [title="..."] [desc="..."] \n code ```
   const parts: React.ReactNode[] = []
-  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
+  const codeBlockRegex = /```([\w\-+#]+)?(?:\s+title="([^"]+)")?(?:\s+desc="([^"]+)")?\n([\s\S]*?)```/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
@@ -146,13 +215,33 @@ export function RichContentRenderer({ content }: RichContentRendererProps) {
     }
 
     const language = match[1] || 'bash'
-    const code = match[2].trimEnd()
+    let customTitle = match[2] || undefined
+    let customDesc = match[3] || undefined
+    let rawCode = match[4] || ''
+
+    // Also support comment-based metadata at the beginning of code:
+    // // [title: ...] or # [title: ...] or <!-- [title: ...] -->
+    const titleMatch = rawCode.match(/^(?:\/\/|#|<!--)\s*\[title:\s*([^\]]+)\]\s*(?:-->)?\n?/i)
+    if (titleMatch) {
+      if (!customTitle) customTitle = titleMatch[1].trim()
+      rawCode = rawCode.replace(titleMatch[0], '')
+    }
+
+    const descMatch = rawCode.match(/^(?:\/\/|#|<!--)\s*\[desc:\s*([^\]]+)\]\s*(?:-->)?\n?/i)
+    if (descMatch) {
+      if (!customDesc) customDesc = descMatch[1].trim()
+      rawCode = rawCode.replace(descMatch[0], '')
+    }
+
+    const code = rawCode.trimEnd()
 
     parts.push(
       <CodeSnippetBlock
         key={`code-${match.index}`}
         language={language}
         code={code}
+        customTitle={customTitle}
+        customDesc={customDesc}
       />
     )
 

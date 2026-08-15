@@ -21,7 +21,11 @@ import {
   Upload,
   Eye,
   RefreshCw,
-  Layers
+  Layers,
+  Globe,
+  Atom,
+  X,
+  FileCode2
 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
 import api from '@/lib/api'
@@ -44,23 +48,34 @@ export default function SessionBuilderPage() {
   const [activeTab, setActiveTab] = useState<'text' | 'image' | 'video' | 'quiz'>('text')
 
   // Text Slide States
-  const [textBody, setTextBody] = useState(`## 1. Panduan Praktikum Command Line
+  const [textBody, setTextBody] = useState(`## 1. Panduan Praktikum Command Line & Web Development
 Jalankan perintah berikut di terminal:
 
-\`\`\`bash
-# Memeriksa port layanan aktif
+\`\`\`bash title="Investigasi Port Jaringan" desc="Memeriksa socket listening dan container aktif"
 ss -tulpn | grep :8088
 docker ps -a
 \`\`\`
 
-\`\`\`powershell
-# Menguji koneksi jaringan port
-Test-NetConnection -ComputerName 192.168.10.100 -Port 8088
+\`\`\`html title="Struktur Header Semantic HTML5" desc="Contoh layout modern dengan tag semantic"
+<header class="navbar-container">
+  <div class="brand-logo">LMS Enterprise</div>
+  <nav class="nav-links">
+    <a href="/courses">Katalog Kursus</a>
+  </nav>
+</header>
 \`\`\`
 
-\`\`\`cmd
-# Memeriksa konfigurasi IP
-ipconfig /all
+\`\`\`tsx title="Komponen React TypeScript" desc="Hook useState interaktif untuk state counter"
+import React, { useState } from 'react'
+
+export function LiveCounter() {
+  const [count, setCount] = useState(0)
+  return (
+    <button onClick={() => setCount(c => c + 1)} className="btn-primary">
+      Klik ({count})
+    </button>
+  )
+}
 \`\`\``)
   const [savingText, setSavingText] = useState(false)
 
@@ -77,6 +92,13 @@ ipconfig /all
   const [opt4, setOpt4] = useState('')
   const [correctOptIdx, setCorrectOptIdx] = useState(1)
   const [savingQuiz, setSavingQuiz] = useState(false)
+
+  // Custom Code Modal States
+  const [showCustomModal, setShowCustomModal] = useState(false)
+  const [customLang, setCustomLang] = useState('html')
+  const [customTitle, setCustomTitle] = useState('')
+  const [customDesc, setCustomDesc] = useState('')
+  const [customCode, setCustomCode] = useState('')
 
   useEffect(() => {
     fetchSessionFlow()
@@ -101,10 +123,9 @@ ipconfig /all
 
   const insertBash = () => {
     insertSnippet(`## Perintah Terminal Linux / Bash
-Jalankan perintah berikut di terminal Linux:
+Jalankan perintah berikut di terminal:
 
-\`\`\`bash
-# Periksa status service dan port jaringan
+\`\`\`bash title="Pemeriksaan Port & Container" desc="Perintah monitoring status kernel dan socket jaringan"
 ss -tulpn | grep -E ':80|:443|:8088'
 curl -I https://lms.consep33t.my.id
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -115,8 +136,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     insertSnippet(`## Perintah Windows PowerShell
 Jalankan cmdlet PowerShell berikut:
 
-\`\`\`powershell
-# Uji konektivitas port TCP
+\`\`\`powershell title="Otomasi Jaringan PowerShell" desc="Cmdlet pengujian port TCP dan manipulasi service"
 Test-NetConnection -ComputerName 192.168.10.100 -Port 8088
 Get-Service -Name "docker" | Select-Object Status, StartType
 Invoke-RestMethod -Uri "https://lms.consep33t.my.id/api/v1/health"
@@ -127,60 +147,128 @@ Invoke-RestMethod -Uri "https://lms.consep33t.my.id/api/v1/health"
     insertSnippet(`## Perintah Windows Command Prompt (CMD)
 Jalankan di jendela CMD:
 
-\`\`\`cmd
+\`\`\`cmd title="Command Prompt Klasik" desc="Perintah diagnosis network Windows"
 netstat -ano | findstr :8088
 ping -n 4 192.168.10.100
 systeminfo | findstr /B /C:"OS Name"
 \`\`\``)
   }
 
-  const insertPython = () => {
-    insertSnippet(`## Implementasi Kode Python
-Berikut adalah fungsi pemrosesan asynchronous:
+  const insertHtml = () => {
+    insertSnippet(`## Struktur Dokumen Semantic HTML5
+Berikut adalah implementasi layout semantic modern:
 
-\`\`\`python
+\`\`\`html title="Semantic HTML5 Structure" desc="Layout header, main content, dan footer dengan semantic tags"
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>LMS Enterprise Platform</title>
+</head>
+<body>
+  <header class="main-header">
+    <h1>Akademi Teknologi & Cloud Architecture</h1>
+  </header>
+  <main class="content-container">
+    <p>Selamat datang di sesi pembelajaran interaktif.</p>
+  </main>
+</body>
+</html>
+\`\`\``)
+  }
+
+  const insertReact = () => {
+    insertSnippet(`## Komponen React & Hooks Interaktif
+Contoh implementasi functional component dengan TypeScript & Hooks:
+
+\`\`\`tsx title="React TSX Component" desc="Komponen pemroses data dengan state management dan event handling"
+import React, { useState, useEffect } from 'react'
+
+interface UserCardProps {
+  name: string
+  role: string
+}
+
+export function UserProfileCard({ name, role }: UserCardProps) {
+  const [active, setActive] = useState(true)
+
+  return (
+    <div className="p-4 rounded-xl border bg-card shadow-sm">
+      <h3 className="font-bold text-lg">{name}</h3>
+      <p className="text-sm text-muted-foreground">{role}</p>
+      <button 
+        onClick={() => setActive(!active)}
+        className="mt-3 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold"
+      >
+        Status: {active ? 'Aktif' : 'Nonaktif'}
+      </button>
+    </div>
+  )
+}
+\`\`\``)
+  }
+
+  const insertPython = () => {
+    insertSnippet(`## Implementasi Kode Asynchronous Python
+Berikut adalah fungsi pemrosesan REST API:
+
+\`\`\`python title="FastAPI Asynchronous Gateway" desc="Endpoint pemrosesan data dengan Pydantic validasi"
 import asyncio
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI(title="LMS Core")
 
-@app.get("/api/status")
-async def get_status():
-    return {"status": "operational", "latency_ms": 1.2}
+class HealthStatus(BaseModel):
+    status: str
+    uptime_seconds: float
+
+@app.get("/api/v1/health", response_model=HealthStatus)
+async def check_health():
+    return HealthStatus(status="healthy", uptime_seconds=86400.0)
 \`\`\``)
   }
 
   const insertYaml = () => {
     insertSnippet(`## Konfigurasi Kubernetes Manifest YAML
-Berikut adalah definisi deployment service:
+Definisi spesifikasi deployment container:
 
-\`\`\`yaml
+\`\`\`yaml title="Kubernetes Deployment Manifest" desc="Konfigurasi 3 replika container dengan resource limits"
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: core-app
+  name: lms-core-deployment
 spec:
   replicas: 3
   template:
     spec:
       containers:
-      - name: web
+      - name: backend
         image: lms_backend_prod:latest
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
 \`\`\``)
   }
 
-  const insertDocker = () => {
-    insertSnippet(`## Dockerfile Multi-Stage Build
-Berikut adalah arsitektur container image:
+  const insertCustomBlockToEditor = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!customCode.trim()) return
 
-\`\`\`dockerfile
-FROM python:3.11-slim AS builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
-\`\`\``)
+    const lang = customLang.trim() || 'text'
+    let headerMeta = lang
+    if (customTitle.trim()) headerMeta += ` title="${customTitle.trim()}"`
+    if (customDesc.trim()) headerMeta += ` desc="${customDesc.trim()}"`
+
+    const formattedBlock = `\`\`\`${headerMeta}\n${customCode.trim()}\n\`\`\``
+    insertSnippet(formattedBlock)
+
+    // Reset Form
+    setCustomTitle('')
+    setCustomDesc('')
+    setCustomCode('')
+    setShowCustomModal(false)
   }
 
   // Save Text Slide
@@ -376,7 +464,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
                     onClick={() => setActiveTab('text')}
                     className="gap-1.5 text-xs font-semibold"
                   >
-                    <Code2 className="h-4 w-4" /> Slide Teks & CLI / Code
+                    <Code2 className="h-4 w-4" /> Slide Teks, Code & CLI
                   </Button>
                   <Button
                     variant={activeTab === 'image' ? 'default' : 'ghost'}
@@ -410,27 +498,42 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
                     <form onSubmit={handleSaveTextSlide} className="space-y-4">
                       {/* Quick Insert Snippet Toolbar */}
                       <div className="p-4 rounded-xl border bg-slate-900/50 border-slate-800 space-y-3">
-                        <div className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                          ⚡ <strong>Quick Snippet Toolbar</strong> (Klik untuk menyisipkan blok kode/command):
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                            ⚡ <strong>Quick Snippet Toolbar</strong> (Klik untuk menyisipkan):
+                          </div>
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={() => setShowCustomModal(true)}
+                            className="h-7 text-xs gap-1 bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 text-white font-semibold shadow"
+                          >
+                            <Sparkles className="h-3 w-3" /> + Custom Code & Shell Builder
+                          </Button>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+
+                        <div className="flex flex-wrap gap-2 pt-1">
                           <Button type="button" variant="outline" size="sm" onClick={insertBash} className="gap-1 text-xs border-sky-500/50 text-sky-400 bg-sky-950/40 hover:bg-sky-900/60">
-                            <Terminal className="h-3.5 w-3.5" /> + Bash / Linux
+                            <Terminal className="h-3.5 w-3.5" /> + Bash
                           </Button>
                           <Button type="button" variant="outline" size="sm" onClick={insertPowerShell} className="gap-1 text-xs border-blue-500/50 text-blue-400 bg-blue-950/40 hover:bg-blue-900/60">
                             <Terminal className="h-3.5 w-3.5" /> + PowerShell
                           </Button>
                           <Button type="button" variant="outline" size="sm" onClick={insertCmd} className="gap-1 text-xs border-amber-500/50 text-amber-400 bg-amber-950/40 hover:bg-amber-900/60">
-                            <Terminal className="h-3.5 w-3.5" /> + CMD Windows
+                            <Terminal className="h-3.5 w-3.5" /> + CMD
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={insertHtml} className="gap-1 text-xs border-orange-500/50 text-orange-400 bg-orange-950/40 hover:bg-orange-900/60">
+                            <Globe className="h-3.5 w-3.5" /> + HTML5
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={insertReact} className="gap-1 text-xs border-cyan-500/50 text-cyan-400 bg-cyan-950/40 hover:bg-cyan-900/60">
+                            <Atom className="h-3.5 w-3.5" /> + React (JSX/TSX)
                           </Button>
                           <Button type="button" variant="outline" size="sm" onClick={insertPython} className="gap-1 text-xs border-emerald-500/50 text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/60">
                             <Code2 className="h-3.5 w-3.5" /> + Python
                           </Button>
                           <Button type="button" variant="outline" size="sm" onClick={insertYaml} className="gap-1 text-xs border-purple-500/50 text-purple-400 bg-purple-950/40 hover:bg-purple-900/60">
                             <Code2 className="h-3.5 w-3.5" /> + YAML Config
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" onClick={insertDocker} className="gap-1 text-xs border-cyan-500/50 text-cyan-400 bg-cyan-950/40 hover:bg-cyan-900/60">
-                            <Code2 className="h-3.5 w-3.5" /> + Dockerfile
                           </Button>
                         </div>
                       </div>
@@ -617,6 +720,78 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
               </Card>
             </div>
           </div>
+
+          {/* MODAL DIALOG CUSTOM CODE & SHELL BUILDER */}
+          {showCustomModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <Card className="w-full max-w-lg border-primary/50 shadow-2xl bg-card">
+                <CardHeader className="bg-muted/40 border-b flex flex-row items-center justify-between p-4 sm:p-6">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <FileCode2 className="h-5 w-5 text-primary" /> Sisipkan Custom Code / Terminal Block
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setShowCustomModal(false)} className="h-8 w-8 p-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <form onSubmit={insertCustomBlockToEditor}>
+                  <CardContent className="p-4 sm:p-6 space-y-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="cLang">Bahasa Pemrograman / Shell</Label>
+                      <Input
+                        id="cLang"
+                        placeholder="Misal: html, react, tsx, rust, go, csharp, bash, powershell, custom"
+                        value={customLang}
+                        onChange={(e) => setCustomLang(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="cTitle">Judul Kustom (Custom Title)</Label>
+                      <Input
+                        id="cTitle"
+                        placeholder="Misal: Struktur Layout Header & Navbar"
+                        value={customTitle}
+                        onChange={(e) => setCustomTitle(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="cDesc">Deskripsi Kustom (Custom Description)</Label>
+                      <Input
+                        id="cDesc"
+                        placeholder="Misal: Implementasi semantic HTML5 dengan responsive container"
+                        value={customDesc}
+                        onChange={(e) => setCustomDesc(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="cCode">Kode Program / Baris Perintah</Label>
+                      <textarea
+                        id="cCode"
+                        rows={6}
+                        className="w-full p-3 rounded-lg border bg-slate-950 text-slate-100 font-mono text-xs focus:ring-2 focus:ring-primary focus:outline-none"
+                        placeholder="Ketik atau paste kode program Anda di sini..."
+                        value={customCode}
+                        onChange={(e) => setCustomCode(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowCustomModal(false)}>
+                        Batal
+                      </Button>
+                      <Button type="submit" size="sm" className="gap-1.5">
+                        <Plus className="h-4 w-4" /> Sisipkan ke Teks Materi
+                      </Button>
+                    </div>
+                  </CardContent>
+                </form>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -26,6 +26,7 @@ class SessionSubmitRequest(BaseModel):
     session_id: int | None = None
     answers: list[AnswerSubmit]
     time_spent_seconds: int = 0
+    current_step: int | None = None
 
 
 class SessionSubmitResponse(BaseModel):
@@ -37,6 +38,38 @@ class SessionSubmitResponse(BaseModel):
     correct_count: int
     total_questions: int
     feedback: list[QuestionFeedback] = []
+    completed_percent: float = 100.0
+
+
+class QuizStepSubmitRequest(BaseModel):
+    quiz_group_id: int = 1
+    answers: list[AnswerSubmit]
+    time_spent_seconds: int = 0
+    current_step: int = 1
+
+
+class QuizStepSubmitResponse(BaseModel):
+    quiz_group_id: int
+    step_correct_count: int
+    step_total_questions: int
+    step_score_earned: float
+    step_weight_percent: float
+    total_accumulated_score: float
+    completed_percent: float
+
+
+class SessionTimeoutRequest(BaseModel):
+    current_step: int
+    total_steps: int
+    time_spent_seconds: int
+
+
+class SessionTimeoutResponse(BaseModel):
+    session_id: int
+    status: ProgressStatus
+    completed_percent: float
+    final_score: float
+    message: str
 
 
 class SessionProgressResponse(BaseModel):
@@ -45,6 +78,9 @@ class SessionProgressResponse(BaseModel):
     is_completed: bool
     score: float | None = None
     status: ProgressStatus | None = None
+    remaining_seconds: int = 1800
+    is_expired: bool = False
+    completed_percent: float = 0.0
 
 
 class UserModuleProgressItem(BaseModel):

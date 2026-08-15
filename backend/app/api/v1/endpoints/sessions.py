@@ -8,16 +8,24 @@ from app.schemas.progress import (
     WatchProgressRequest,
     SessionSubmitRequest,
     SessionSubmitResponse,
-    SessionProgressResponse
+    SessionProgressResponse,
+    QuizStepSubmitRequest,
+    QuizStepSubmitResponse,
+    SessionTimeoutRequest,
+    SessionTimeoutResponse
 )
 
 router = APIRouter()
 
 
 @router.get("/{session_id}", response_model=SessionDetailResponse)
-async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
+async def get_session(
+    session_id: int,
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
     service = SessionService(db)
-    return await service.get_session_detail(session_id)
+    return await service.get_session_flow_detail(session_id, current_user_id)
 
 
 @router.get("/{session_id}/progress", response_model=SessionProgressResponse)
@@ -28,6 +36,28 @@ async def get_session_progress(
 ):
     service = SessionService(db)
     return await service.get_user_session_progress(session_id, current_user_id)
+
+
+@router.post("/{session_id}/quiz-step", response_model=QuizStepSubmitResponse)
+async def submit_quiz_step(
+    session_id: int,
+    req: QuizStepSubmitRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    service = SessionService(db)
+    return await service.submit_quiz_step(session_id, current_user_id, req)
+
+
+@router.post("/{session_id}/timeout", response_model=SessionTimeoutResponse)
+async def handle_session_timeout(
+    session_id: int,
+    req: SessionTimeoutRequest,
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    service = SessionService(db)
+    return await service.handle_session_timeout(session_id, current_user_id, req)
 
 
 @router.post("/{session_id}/submit", response_model=SessionSubmitResponse)

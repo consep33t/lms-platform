@@ -43,8 +43,30 @@ class SessionResponse(SessionBase):
     updated_at: datetime
 
 
+class SlideItem(BaseModel):
+    id: int
+    step_number: int
+    step_type: str  # text | image | video | quiz
+    title: str
+    text_body: str | None = None
+    media_file_id: int | None = None
+    quiz_group_id: int | None = None
+    quiz_weight_percent: float = 0.0
+    questions: list[QuestionResponse] = []
+
+
 class SessionDetailResponse(SessionResponse):
     model_config = ConfigDict(from_attributes=True)
 
     contents: list[SessionContentResponse] = []
     questions: list[QuestionResponse] = []
+    steps: list[SlideItem] = []
+    total_steps: int = 0
+    total_quizzes: int = 0
+    duration_seconds: int = 1800
+    remaining_seconds: int = 1800
+    is_expired: bool = False
+    current_step: int = 1
+    completed_percent: float = 0.0
+    accumulated_score: float = 0.0
+    is_completed: bool = False

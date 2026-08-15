@@ -9,7 +9,7 @@ import subprocess
 from datetime import datetime, timedelta
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import async_session_factory
+from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
 from app.models.module import Module, ModuleStatus
@@ -349,7 +349,7 @@ def generate_media_assets():
 
 async def reset_and_seed_curriculum():
     print("🔥 STEP 1: Truncating database tables with FK-safe order...")
-    async with async_session_factory() as db:
+    async with AsyncSessionLocal() as db:
         # FK-safe delete in reverse order
         await db.execute(text("DELETE FROM content_watch_progress"))
         await db.execute(text("DELETE FROM user_answers"))

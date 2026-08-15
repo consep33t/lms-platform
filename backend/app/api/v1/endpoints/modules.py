@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_id
 from app.services.module_service import ModuleService
-from app.schemas.module import ModuleResponse
+from app.schemas.module import ModuleResponse, ModuleDetailResponse
 from app.schemas.token import TokenVerifyRequest, TokenVerifyResponse
 
 router = APIRouter()
@@ -15,7 +15,7 @@ async def list_modules(db: AsyncSession = Depends(get_db)):
     return await service.list_published_modules()
 
 
-@router.get("/{module_id}", response_model=ModuleResponse)
+@router.get("/{module_id}", response_model=ModuleDetailResponse)
 async def get_module(module_id: int, db: AsyncSession = Depends(get_db)):
     service = ModuleService(db)
     return await service.get_module_detail(module_id)

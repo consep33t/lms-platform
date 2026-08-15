@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from app.models.module import ModuleStatus
+from app.schemas.session import SessionResponse
 
 
 class ModuleBase(BaseModel):
@@ -32,6 +33,12 @@ class ModuleResponse(ModuleBase):
     created_by: int
     created_at: datetime
     updated_at: datetime
+
+
+class ModuleDetailResponse(ModuleResponse):
+    model_config = ConfigDict(from_attributes=True)
+
+    sessions: list[SessionResponse] = []
 
 
 class ModuleRatingCreate(BaseModel):

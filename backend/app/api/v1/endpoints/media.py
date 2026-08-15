@@ -1,7 +1,10 @@
 import hmac
 import hashlib
 import time
+import os
+from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Response
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_id, get_storage
@@ -43,8 +46,32 @@ async def get_signed_url(
     if not media:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media tidak ditemukan")
 
-    signed_url = await storage.get_signed_url(media.storage_key, expires_in=300)
-    return SignedUrlResponse(media_id=media.id, signed_url=signed_url, expires_in_seconds=300)
+    signed_url = await storage.get_signed_url(media.storage_key, expires_in=3600)
+    return SignedUrlResponse(media_id=media.id, signed_url=signed_url, expires_in_seconds=3600)
+
+
+@router.get("/{media_id}/stream")
+async def stream_media_by_id(
+    media_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = MediaRepository(db)
+    media = await repo.get_by_id(media_id)
+    if not media:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media tidak ditemukan")
+
+    base_path = Path(settings.STORAGE_LOCAL_BASE_PATH)
+    file_path = base_path / media.storage_key
+
+    if not file_path.exists():
+        # check fallback in /data/uploads or ./uploads
+        alt_path = Path("/data/uploads") / media.storage_key
+        if alt_path.exists():
+            file_path = alt_path
+        else:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File media tidak ditemukan di server")
+
+    return FileResponse(path=str(file_path), media_type=media.mime_type, filename=media.original_name)
 
 
 @router.get("/files/{key:path}")
@@ -61,7 +88,14 @@ async def serve_protected_file(key: str, expires: int, signature: str):
     if int(time.time()) > expires:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Link akses telah kadaluarsa")
 
-    # FastAPI does NOT stream the bytes � Nginx handles streaming via X-Accel-Redirect
+    base_path = Path(settings.STORAGE_LOCAL_BASE_PATH)
+    file_path = base_path / key
+    if not file_path.exists():
+        file_path = Path("/data/uploads") / key
+
+    if file_path.exists():
+        return FileResponse(path=str(file_path))
+
     resp = Response(status_code=status.HTTP_200_OK)
     resp.headers["X-Accel-Redirect"] = f"/protected/{key}"
     resp.headers["Content-Disposition"] = "inline"

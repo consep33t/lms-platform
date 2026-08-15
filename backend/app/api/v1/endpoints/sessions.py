@@ -3,13 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_id
 from app.services.session_service import SessionService
-from app.schemas.session import SessionResponse
+from app.schemas.session import SessionDetailResponse
 from app.schemas.progress import WatchProgressRequest, SessionSubmitRequest, SessionSubmitResponse
 
 router = APIRouter()
 
 
-@router.get("/{session_id}", response_model=SessionResponse)
+@router.get("/{session_id}", response_model=SessionDetailResponse)
 async def get_session(session_id: int, db: AsyncSession = Depends(get_db)):
     service = SessionService(db)
     return await service.get_session_detail(session_id)

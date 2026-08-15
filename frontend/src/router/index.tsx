@@ -13,6 +13,7 @@ import AdminUsersPage from '@/pages/admin/UsersPage'
 import AdminTokensPage from '@/pages/admin/TokensPage'
 import AdminCohortsPage from '@/pages/admin/CohortsPage'
 import AdminReportsPage from '@/pages/admin/ReportsPage'
+import SessionBuilderPage from '@/pages/admin/SessionBuilderPage'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 
 export const router = createBrowserRouter([

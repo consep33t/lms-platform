@@ -1,0 +1,144 @@
+name: Production Auto Deployment
+
+on:
+  push:
+    branches: [ "production" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set environment variables
+      id: vars
+      run: |
+        echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+        echo "START_TIME=$(TZ='Asia/Jakarta' date +'%H:%M WIB %d/%m/%Y')" >> $GITHUB_ENV
+        echo "START_TS=$(date +%s)" >> $GITHUB_ENV
+        
+        # Ambil hanya baris pertama (judul) dari commit message
+        COMMIT_TITLE=$(jq -r '.head_commit.message | split("\n")[0]' "$GITHUB_EVENT_PATH")
+        echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+
+    - name: Notify Discord (Start)
+      run: |
+        ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        jq -n \
+          --arg repo "${{ github.repository }}" \
+          --arg run_id "${{ github.run_id }}" \
+          --arg actor "${{ github.actor }}" \
+          --arg sha "$SHORT_SHA" \
+          --arg msg "$COMMIT_TITLE" \
+          --arg time "$ISO_TIME" \
+          '{
+            username: "GitHub Actions CI",
+            avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            embeds: [{
+              author: { name: $actor, icon_url: "https://github.com/\($actor).png" },
+              title: "🚀 Backend Auto-Deploy Started",
+              url: "https://github.com/\($repo)/actions/runs/\($run_id)",
+              description: "**Commit:** [`\($sha)`](https://github.com/\($repo)/commit/\($sha))\n**Message:** \($msg)\n\n🏗️ Building and recreating container...",
+              color: 16753920,
+              fields: [
+                { name: "📦 Service", value: "`wa-gateway-api`", inline: true },
+                { name: "🌿 Branch", value: "`production`", inline: true }
+              ],
+              footer: { text: "CI/CD Pipeline Started", icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" },
+              timestamp: $time
+            }]
+          }' > payload.json
+        curl -H "Content-Type: application/json" -d @payload.json ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+        tags: tag:ci
+        
+        
+    - name: Wake up Tailscale Tunnel
+      run: |
+        echo "Waking up tunnel to 100.99.177.48..."
+        tailscale ping 100.99.177.48 || true
+        ping -c 5 100.99.177.48 || true
+        nc -zv 100.99.177.48 22 || true
+
+    - name: Trigger Deployment Webhook
+      run: |
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST -d 'WaGatewaySuperSecretDeployToken2026' http://100.99.177.48:9000/deploy)
+        if [ "$HTTP_STATUS" -eq 200 ]; then
+          echo "Deployment triggered successfully!"
+        else
+          echo "Failed to trigger deployment. HTTP Status: $HTTP_STATUS"
+          exit 1
+        fi
+
+    - name: Notify Discord (Success)
+      if: success()
+      run: |
+        ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        END_TS=$(date +%s)
+        DURATION=$((END_TS - START_TS))
+        
+        jq -n \
+          --arg repo "${{ github.repository }}" \
+          --arg run_id "${{ github.run_id }}" \
+          --arg actor "${{ github.actor }}" \
+          --arg sha "$SHORT_SHA" \
+          --arg msg "$COMMIT_TITLE" \
+          --arg time "$ISO_TIME" \
+          --arg dur "${DURATION}s" \
+          '{
+            username: "GitHub Actions CI",
+            avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            embeds: [{
+              author: { name: $actor, icon_url: "https://github.com/\($actor).png" },
+              title: "✅ Backend Auto-Deploy Successful",
+              url: "https://github.com/\($repo)/actions/runs/\($run_id)",
+              description: "**Commit:** [`\($sha)`](https://github.com/\($repo)/commit/\($sha))\n**Message:** \($msg)\n\n✨ Service is now running perfectly!",
+              color: 3066993,
+              fields: [
+                { name: "📦 Service", value: "`wa-gateway-api`", inline: true },
+                { name: "🌿 Branch", value: "`production`", inline: true },
+                { name: "⏱️ Duration", value: "`\($dur)`", inline: true }
+              ],
+              footer: { text: "CI/CD Pipeline Success", icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" },
+              timestamp: $time
+            }]
+          }' > payload.json
+        curl -H "Content-Type: application/json" -d @payload.json ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+    - name: Notify Discord (Error)
+      if: failure()
+      run: |
+        ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        END_TS=$(date +%s)
+        DURATION=$((END_TS - START_TS))
+        
+        jq -n \
+          --arg repo "${{ github.repository }}" \
+          --arg run_id "${{ github.run_id }}" \
+          --arg actor "${{ github.actor }}" \
+          --arg sha "$SHORT_SHA" \
+          --arg msg "$COMMIT_TITLE" \
+          --arg time "$ISO_TIME" \
+          --arg dur "${DURATION}s" \
+          '{
+            username: "GitHub Actions CI",
+            avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            embeds: [{
+              author: { name: $actor, icon_url: "https://github.com/\($actor).png" },
+              title: "❌ Backend Auto-Deploy Failed",
+              url: "https://github.com/\($repo)/actions/runs/\($run_id)",
+              description: "**Commit:** [`\($sha)`](https://github.com/\($repo)/commit/\($sha))\n**Message:** \($msg)\n\n⚠️ Deployment encountered a fatal error. Please check the logs.",
+              color: 15158332,
+              fields: [
+                { name: "📦 Service", value: "`wa-gateway-api`", inline: true },
+                { name: "🌿 Branch", value: "`production`", inline: true },
+                { name: "⏱️ Duration", value: "`\($dur)`", inline: true }
+              ],
+              footer: { text: "CI/CD Pipeline Failed", icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" },
+              timestamp: $time
+            }]
+          }' > payload.json
+        curl -H "Content-Type: application/json" -d @payload.json ${{ secrets.DISCORD_WEBHOOK_URL }}

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -7,6 +7,8 @@ from app.core.security import get_password_hash
 from app.models.user import User
 from app.schemas.user import UserResponse, UserCreate, UserUpdate, UserRejectRequest
 from app.repositories.user_repo import UserRepository
+from app.services.whatsapp_service import WhatsAppService
+from app.services.email_service import EmailService
 
 router = APIRouter()
 
@@ -33,6 +35,7 @@ async def admin_list_pending_approvals(
 @router.post("/{user_id}/approve", response_model=UserResponse)
 async def admin_approve_student(
     user_id: int,
+    background_tasks: BackgroundTasks,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -40,6 +43,11 @@ async def admin_approve_student(
     user = await repo.approve_user(user_id, admin.id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
+
+    # Send Notification via WhatsApp Gateway & Email Gateway
+    background_tasks.add_task(WhatsAppService.send_approval_notification, user)
+    background_tasks.add_task(EmailService.send_approval_email, user)
+
     return user
 
 

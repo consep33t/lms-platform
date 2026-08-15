@@ -58,6 +58,14 @@ services:
       - S3_SECRET_KEY=SuperSecretPassword123
       - S3_BUCKET_NAME=lms
       - S3_USE_SSL=false
+      - WA_GATEWAY_URL=http://192.168.10.100:3333
+      - WA_GATEWAY_ENABLED=true
+      - EMAILS_ENABLED=true
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - FRONTEND_URL=https://lms.consep33t.my.id
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
       - TZ=Asia/Jakarta
     volumes:
       - lms_uploads:/data/uploads

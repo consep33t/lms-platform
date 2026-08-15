@@ -1,50 +1,26 @@
-# Changelog � LMS Platform
+# Changelog
 
-All notable changes to this project are documented here.
+All notable changes to LMS Platform will be documented in this file.
 
----
+## [1.2.0] - 2026-08-16
+### Fixed & Hardened (Eliminasi Total Ilusi, Mock & Hutang Teknis)
+- **Engine Evaluasi Kuis di Server:**
+  - Evaluasi kuis pilihan ganda kini 100% diproses di backend FastAPI + database MSSQL (`POST /api/v1/sessions/{id}/submit`).
+  - Menghilangkan mock frontend: kalkulasi skor, kelulusan KKM, penyimpanan `user_answers`, dan feedback pembahasan soal kini bersumber langsung dari database.
+  - Relasi `SessionProgress` dan `UserModuleProgress` telah diselaraskan dengan foreign key yang tepat beserta penanganan eager loading `selectinload` untuk mencegah missing greenlet pada async SQLAlchemy.
+- **Sinkronisasi Progres Pembelajaran:**
+  - Endpoint baru `GET /api/v1/users/me/progress` mengagregasi persentase kemajuan modul, sesi yang telah selesai, dan nilai rata-rata kuis secara real-time.
+  - `HistoryPage.tsx` di frontend telah diperbarui untuk menampilkan kemajuan riil pengguna.
+- **Admin CMS Dashboard & Manajemen Terintegrasi:**
+  - Endpoint `/api/v1/admin/reports/dashboard` dan `/api/v1/admin/reports/dashboard-stats` menyediakan statistik analitik real-time.
+  - Halaman Admin (`DashboardPage.tsx`, `ModulesPage.tsx`, `TokensPage.tsx`, `UsersPage.tsx`) terhubung penuh ke REST API live tanpa mock data.
+- **Penanganan Berkas Besar (Video & Gambar):**
+  - Implementasi HTTP 206 Partial Content Chunked Range Streaming untuk video tanpa lonjakan RAM.
+  - Pipeline optimasi gambar non-destruktif Pillow (LANCZOS + WebP + Progressive JPEG).
+  - MinIO S3 Driver thread-safe per request.
 
-## [1.1.0] � 2026-08-16
-
-### Fixed & Hardened � High Availability, Media Pipeline & Zero-Copy Streaming
-- **Dynamic Docker DNS Resolver in Nginx**: Menambahkan directif `resolver 127.0.0.11 valid=5s` dan dynamic upstream variable pada `deploy/nginx.prod.conf` untuk mengeliminasi Cloudflare Error 502 saat container backend di-recreate.
-- **RFC 1123 MinIO Compatibility**: Memperbaiki network alias `shared-minio` pada Docker Compose untuk mencegah strict host header rejection.
-- **aioboto3 Context Manager**: Memperbarui `s3_driver.py` dengan per-request async session generation dan abort multipart handler.
-- **Non-Destructive Image Optimization**: Menambahkan pipeline kompresi non-destruktif Pillow (LANCZOS resampling, WebP, Progressive JPEG) untuk format PNG, JPG, dan WebP guna menghemat 30-70% bandwidth tanpa mengurangi ketajaman visual.
-- **HTTP 206 Partial Content Range Streaming**: Streaming video MP4 chunked byte ranges untuk playback instan dan zero RAM spike.
-- **Interactive Frontend Learning & Quiz**: Frontend terhubung dinamis ke database, video player HTML5 streaming, diagram topologi, dan evaluasi kuis pilihan ganda dengan skor otomatis & pembahasan.
-
----
-
-## [1.0.0-rc1] � 2026-08-16
-
-### Added � Full Stack Core Implementation
-
-#### Database & Models (SQLAlchemy 2.x Async)
-- **User Models**: `User`, `UserSettings`, `RefreshToken`, `AuditLog`.
-- **Module Models**: `Module`, `ModulePrerequisite`, `ModuleRating`.
-- **Session & Content Models**: `ModuleSession`, `SessionContent`, `ContentWatchProgress`.
-- **Assessment Models**: `Question`, `QuestionOption`.
-- **Token & Access Models**: `ModuleToken`, `TokenUsage`.
-- **Progress & Tracking Models**: `UserModuleProgress`, `SessionProgress`, `UserAnswer`, `Certificate`, `SessionFlag`.
-- **Cohort & Assignment Models**: `Cohort`, `CohortMember`, `ModuleAssignment`.
-- **Notification Models**: `Notification`.
-- **Media Models**: `MediaFile` (dengan status lifecycle: `uploading` -> `processing` -> `ready`).
-
-#### Storage & File Serving Architecture
-- Storage interface `StorageBackend` dengan driver `LocalDiskStorageBackend` (default) & `S3StorageBackend` (siap aktif via env).
-- Streaming upload (1MB per chunk) mencegah kehabisan memory RAM pada file video besar.
-- Endpoint serving file privat terlindungi HMAC signature (`/files/{key:path}` -> `X-Accel-Redirect` Nginx).
-
-#### API Services & Endpoints
-- **Auth**: Registrasi, login JWT, refresh token cookie httpOnly, get user me, role guard `require_admin`.
-- **Media**: Upload multipart streaming, generate signed URL 300s, serve file via Nginx redirect.
-- **Modules & Token**: Listing modul published, verifikasi token 8-digit, unlock akses otomatis.
-- **Sessions & Quiz**: Ambil materi sesi, tracking watched video percent (throttled), submit jawaban kuis pilihan ganda & kalkulasi skor real-time.
-- **Admin CMS**: CRUD Modul, CRUD User, generate & toggle token akses, dashboard statistics analitik.
-
-#### Background Workers (Celery)
-- Task pemrosesan metadata video & transcode thumbnail.
-- Task pembuatan sertifikat PDF.
-- Task pengiriman email notifikasi.
-- Periodic beat task pembersihan file upload yatim (orphan/expired).
+## [1.1.0] - 2026-08-15
+### Added
+- Integrasi Cloudflare Tunnel domain `https://lms.consep33t.my.id`.
+- Nginx dynamic DNS resolver `127.0.0.11` untuk auto-recovery backend upstream saat container recreate.
+- Data kurikulum riil untuk 3 Modul Jaringan & Keamanan Siber, Sesi, Konten Multimedia, Soal Kuis, dan Token Akses.

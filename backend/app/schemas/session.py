@@ -22,6 +22,13 @@ class SessionUpdate(BaseModel):
     duration_minutes: int | None = None
 
 
+class SessionContentCreate(BaseModel):
+    content_type: ContentType = ContentType.text
+    text_body: str | None = None
+    media_file_id: int | None = None
+    order: int = 1
+
+
 class SessionContentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

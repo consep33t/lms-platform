@@ -191,8 +191,10 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
     const nextOrder = (sessionDetail?.steps?.length || 0) + 1
     try {
       setSavingText(true)
-      await api.post(`/admin/modules/sessions/${sessionId}/contents?content_type=text&order=${nextOrder}`, {
-        text_body: textBody
+      await api.post(`/admin/modules/sessions/${sessionId}/contents`, {
+        content_type: 'text',
+        text_body: textBody,
+        order: nextOrder
       })
       alert('Slide teks & kode berhasil ditambahkan!')
       fetchSessionFlow()
@@ -224,7 +226,11 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
       const mediaId = uploadRes.data.id
 
       const nextOrder = (sessionDetail?.steps?.length || 0) + 1
-      await api.post(`/admin/modules/sessions/${sessionId}/contents?content_type=image&media_file_id=${mediaId}&order=${nextOrder}`)
+      await api.post(`/admin/modules/sessions/${sessionId}/contents`, {
+        content_type: 'image',
+        media_file_id: mediaId,
+        order: nextOrder
+      })
       alert('Slide gambar diagram berhasil diunggah & disimpan!')
       setImageFile(null)
       fetchSessionFlow()
@@ -256,7 +262,11 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8088"]
       const mediaId = uploadRes.data.id
 
       const nextOrder = (sessionDetail?.steps?.length || 0) + 1
-      await api.post(`/admin/modules/sessions/${sessionId}/contents?content_type=video&media_file_id=${mediaId}&order=${nextOrder}`)
+      await api.post(`/admin/modules/sessions/${sessionId}/contents`, {
+        content_type: 'video',
+        media_file_id: mediaId,
+        order: nextOrder
+      })
       alert('Slide video demonstrasi berhasil diunggah & disimpan!')
       setVideoFile(null)
       fetchSessionFlow()

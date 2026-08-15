@@ -105,11 +105,23 @@ class SessionService:
         # Build interleaved content slides and quiz checkpoints
         q_idx = 0
         for c in contents:
+            slide_title = f"Materi #{step_counter}: Pembahasan Sesi"
+            if c.content_type == ContentType.text and c.text_body:
+                for line in c.text_body.split("\n"):
+                    clean_line = line.strip()
+                    if clean_line.startswith("# ") or clean_line.startswith("## "):
+                        slide_title = clean_line.lstrip("#").strip()
+                        break
+            elif c.content_type == ContentType.image:
+                slide_title = f"Diagram Arsitektur Sistem #{step_counter}"
+            elif c.content_type == ContentType.video:
+                slide_title = f"Video Demonstrasi Praktikum #{step_counter}"
+
             steps.append(SlideItem(
                 id=c.id,
                 step_number=step_counter,
                 step_type=c.content_type.value,
-                title=f"Materi #{step_counter}: {c.content_type.value.capitalize()} Slide",
+                title=slide_title,
                 text_body=c.text_body,
                 media_file_id=c.media_file_id
             ))

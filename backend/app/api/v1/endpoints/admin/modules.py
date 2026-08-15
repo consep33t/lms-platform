@@ -10,7 +10,7 @@ from app.models.session import ModuleSession
 from app.models.content import SessionContent, ContentType
 from app.models.question import Question, QuestionOption
 from app.schemas.module import ModuleCreate, ModuleUpdate, ModuleResponse
-from app.schemas.session import SessionCreate, SessionUpdate, SessionResponse, SessionContentResponse
+from app.schemas.session import SessionCreate, SessionUpdate, SessionResponse, SessionContentResponse, SessionContentCreate
 from app.schemas.question import QuestionCreate, QuestionAdminResponse
 
 router = APIRouter()
@@ -159,10 +159,11 @@ async def admin_delete_session(
 @router.post("/sessions/{session_id}/contents", response_model=SessionContentResponse, status_code=status.HTTP_201_CREATED)
 async def admin_create_session_content(
     session_id: int,
-    content_type: ContentType,
+    payload: SessionContentCreate | None = None,
+    content_type: ContentType | None = None,
     text_body: str | None = None,
     media_file_id: int | None = None,
-    order: int = 1,
+    order: int | None = None,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -171,12 +172,17 @@ async def admin_create_session_content(
     if not session:
         raise HTTPException(status_code=404, detail="Sesi tidak ditemukan")
 
+    final_type = payload.content_type if payload else (content_type or ContentType.text)
+    final_text = payload.text_body if (payload and payload.text_body is not None) else text_body
+    final_media = payload.media_file_id if (payload and payload.media_file_id is not None) else media_file_id
+    final_order = payload.order if (payload and payload.order is not None) else (order or 1)
+
     content = SessionContent(
         session_id=session_id,
-        content_type=content_type,
-        text_body=text_body,
-        media_file_id=media_file_id,
-        order=order
+        content_type=final_type,
+        text_body=final_text,
+        media_file_id=final_media,
+        order=final_order
     )
     db.add(content)
     await db.flush()

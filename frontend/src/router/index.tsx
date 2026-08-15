@@ -52,6 +52,10 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute requireAdmin><AdminModulesPage /></ProtectedRoute>,
   },
   {
+    path: '/admin/modules/:moduleId/sessions/:sessionId/builder',
+    element: <ProtectedRoute requireAdmin><SessionBuilderPage /></ProtectedRoute>,
+  },
+  {
     path: '/admin/users',
     element: <ProtectedRoute requireAdmin><AdminUsersPage /></ProtectedRoute>,
   },

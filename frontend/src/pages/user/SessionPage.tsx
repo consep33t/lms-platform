@@ -416,10 +416,10 @@ export default function SessionPage() {
 
             {/* Body Slide */}
             <CardContent className="p-6 md:p-8 space-y-6">
-              {/* TIPE 1: KONTEN TEKS */}
+              {/* TIPE 1: KONTEN TEKS & RICH CODE/TERMINAL */}
               {currentStep.step_type === 'text' && currentStep.text_body && (
-                <div className="prose dark:prose-invert max-w-none text-base md:text-lg leading-relaxed whitespace-pre-line text-foreground/90 font-normal">
-                  {currentStep.text_body}
+                <div className="prose dark:prose-invert max-w-none text-base md:text-lg leading-relaxed text-foreground/90 font-normal">
+                  <RichContentRenderer content={currentStep.text_body} />
                 </div>
               )}
 

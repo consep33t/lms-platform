@@ -2,31 +2,20 @@
 
 All notable changes to LMS Platform will be documented in this file.
 
+## [1.5.0] - 2026-08-16
+### Added & Enhanced (Slide Sequencer, Live Countdown Timer & Dynamic Quiz Math)
+- **Slide Sequencer Interaktif:**
+  - Struktur sesi kini disajikan secara bertahap (slide demi slide) mencakup teks materi mendalam, blueprint gambar diagram high-res, pemutar video demonstrasi streaming, serta checkpoint kuis evaluasi di sela-sela slide.
+- **Live Countdown Timer & Auto-Timeout Handler:**
+  - Timer hitungan mundur aktif (format MM:SS) dengan indikator visual dinamis (Hijau, Kuning, dan Merah Berkedip saat waktu menipis).
+  - Jika waktu sesi berakhir (timeout), sistem secara otomatis mencatat persentase slide yang telah berhasil diselesaikan peserta dan mengunci sesi dengan akumulasi nilai kuis yang telah dijawab hingga detik tersebut.
+- **Kalkulasi Nilai Kuis Dinamis Matematis:**
+  - Setiap kuis di sela slide bernilai bobot proporsional (100% / N kuis).
+  - Jika terdapat soal yang salah pada salah satu kuis, nilai kuis tersebut dibagi secara proporsional dari jumlah butir soal kuis tersebut.
+  - Skor akhir sesi merupakan akumulasi otomatis dari seluruh kuis checkpoint yang berhasil dikerjakan.
+
 ## [1.4.0] - 2026-08-16
 ### Added & Security Hardened
-- **Proteksi Integritas Kuis (Anti-Answer Leaks):**
-  - Menghilangkan pembocoran kunci jawaban (`correct_option_id` dan `explanation`) pada response API submit kuis (`POST /api/v1/sessions/{id}/submit`) dan antarmuka frontend (`SessionPage.tsx`).
-  - Peserta hanya menerima status kelulusan, persentase nilai akhir, dan jumlah soal benar/salah tanpa mengetahui opsi mana yang menjadi kunci jawaban yang bocor, mencegah eksploitasi hafalan kunci jawaban.
-- **Generasi Modul Baru Enterprise (Cloud Native, Kubernetes & GitOps):**
-  - Modul baru: *"Arsitektur Cloud Native: Kubernetes Orchestration, Docker & GitOps Enterprise"*.
-  - Sesi 1: Fundamental Docker & Kernel Linux Namespaces/cgroups dengan Diagram Resolusi Tinggi.
-  - Sesi 2: Orkestrasi Kubernetes Cluster dengan Pemutar Video Demonstrasi Streaming MP4 (HTTP 206 Partial Content).
-  - Sesi 3: GitOps CI/CD Pipeline & Zero-Downtime Deployment dengan Diagram Alur High-Res.
-  - Token Akses Modul Khusus: `CLOUDNATIVE-PRO-2026` & `K8S-DEVOPS-2026`.
-  - Integrasi penuh ke database MSSQL dan MinIO S3 Object Storage.
-
-## [1.3.0] - 2026-08-16
-### Fixed & Hardened
-- Pengikatan token akses ketat per modul (Strict Module Token Binding).
-- Kalkulasi progres kumulatif modul dari database (Real-time Live Sync).
-- Implementasi Admin Cohorts & Reports CMS.
-
-## [1.2.0] - 2026-08-16
-### Fixed
-- Evaluasi kuis server-side dengan skema relasi ForeignKey SessionProgress -> UserModuleProgress.
-- Eager loading selectinload pada async SQLAlchemy.
-
-## [1.1.0] - 2026-08-15
-### Added
-- Integrasi Cloudflare Tunnel domain https://lms.consep33t.my.id.
-- Nginx dynamic DNS resolver dan HTTP 206 chunked range streaming.
+- Proteksi integritas kuis tanpa kebocoran kunci jawaban (Anti-Answer Leaks).
+- Generasi Modul Enterprise: Cloud Native, Kubernetes Orchestration & GitOps.
+- Standarisasi .env.example, .gitattributes (LF), dan GitHub Actions CI.

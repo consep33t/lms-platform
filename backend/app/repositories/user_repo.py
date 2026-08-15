@@ -47,6 +47,8 @@ class UserRepository:
         # Create default user settings
         settings = UserSettings(user_id=user.id)
         self.db.add(settings)
+        await self.db.flush()
+        await self.db.refresh(user)
         return user
 
     async def approve_user(self, user_id: int, admin_id: int) -> User | None:
@@ -59,6 +61,7 @@ class UserRepository:
         user.approved_at = datetime.utcnow()
         user.approved_by = admin_id
         await self.db.flush()
+        await self.db.refresh(user)
         return user
 
     async def reject_user(self, user_id: int, reason: str) -> User | None:
@@ -70,6 +73,7 @@ class UserRepository:
         user.approval_status = "rejected"
         user.rejection_reason = reason
         await self.db.flush()
+        await self.db.refresh(user)
         return user
 
     async def save_refresh_token(self, token: RefreshToken) -> RefreshToken:

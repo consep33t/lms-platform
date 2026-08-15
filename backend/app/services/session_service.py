@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.models.session import ModuleSession
-from app.models.content import SessionContent, ContentWatchProgress
+from app.models.content import SessionContent, ContentWatchProgress, ContentType
 from app.models.question import Question, QuestionOption
 from app.models.progress import UserModuleProgress, SessionProgress, UserAnswer, ProgressStatus
 from app.schemas.session import SessionDetailResponse, SlideItem, SessionContentResponse

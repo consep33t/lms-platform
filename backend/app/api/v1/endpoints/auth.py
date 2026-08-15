@@ -2,7 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.auth_service import AuthService
-from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse
+from app.schemas.user import (
+    UserCreate,
+    UserLogin,
+    TokenResponse,
+    UserResponse,
+    StudentRegisterRequest,
+    StudentRegistrationResponse,
+    GoogleRegisterRequest
+)
 from app.core.dependencies import get_current_user_id
 from app.repositories.user_repo import UserRepository
 
@@ -11,8 +19,60 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Admin pre-approved user creation"""
     service = AuthService(db)
     return await service.register(user_in)
+
+
+@router.post("/register-student", response_model=StudentRegistrationResponse, status_code=status.HTTP_201_CREATED)
+async def register_student(req: StudentRegisterRequest, db: AsyncSession = Depends(get_db)):
+    """Public student self-registration flow with automated custom LMS email and admin approval gate"""
+    service = AuthService(db)
+    user = await service.register_student(req)
+    return StudentRegistrationResponse(
+        id=user.id,
+        full_name=user.full_name,
+        personal_email=user.personal_email or user.email,
+        custom_lms_email=user.custom_lms_email or user.email,
+        approval_status=user.approval_status,
+        message="Pendaftaran berhasil! Akun Anda telah dibuat dan sedang menunggu persetujuan Administrator."
+    )
+
+
+@router.post("/google-register")
+async def google_register(req: GoogleRegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
+    """Google OAuth2 student registration / login"""
+    service = AuthService(db)
+    user, access_token, refresh_token = await service.register_or_login_google(req)
+
+    if access_token and refresh_token:
+        # Set httpOnly cookie for refresh token
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=7 * 24 * 60 * 60,
+        )
+        return {
+            "status": "approved",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse.model_validate(user)
+        }
+    else:
+        return {
+            "status": "pending",
+            "user": {
+                "id": user.id,
+                "full_name": user.full_name,
+                "personal_email": user.personal_email or user.email,
+                "custom_lms_email": user.custom_lms_email or user.email,
+                "approval_status": user.approval_status
+            },
+            "message": "Pendaftaran Google berhasil. Akun Anda sedang menunggu persetujuan Administrator sebelum dapat mengakses materi."
+        }
 
 
 @router.post("/login", response_model=TokenResponse)

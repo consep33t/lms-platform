@@ -5,7 +5,8 @@ from app.core.database import get_db
 from app.core.dependencies import require_admin
 from app.core.security import get_password_hash
 from app.models.user import User
-from app.schemas.user import UserResponse, UserCreate, UserUpdate
+from app.schemas.user import UserResponse, UserCreate, UserUpdate, UserRejectRequest
+from app.repositories.user_repo import UserRepository
 
 router = APIRouter()
 
@@ -18,6 +19,42 @@ async def admin_list_users(
     stmt = select(User).where(User.is_deleted == False).order_by(User.created_at.desc())
     res = await db.execute(stmt)
     return list(res.scalars().all())
+
+
+@router.get("/pending-approvals", response_model=list[UserResponse])
+async def admin_list_pending_approvals(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    return await repo.get_pending_approvals()
+
+
+@router.post("/{user_id}/approve", response_model=UserResponse)
+async def admin_approve_student(
+    user_id: int,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    user = await repo.approve_user(user_id, admin.id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
+    return user
+
+
+@router.post("/{user_id}/reject", response_model=UserResponse)
+async def admin_reject_student(
+    user_id: int,
+    req: UserRejectRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    user = await repo.reject_user(user_id, req.rejection_reason)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
+    return user
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -37,10 +74,14 @@ async def admin_create_user(
 
     user = User(
         email=req.email,
+        personal_email=req.email,
         full_name=req.full_name,
         hashed_password=get_password_hash(req.password),
         role=req.role,
         is_active=True,
+        is_approved=True,
+        approval_status="approved",
+        registration_source="admin_create",
         is_deleted=False
     )
     db.add(user)
@@ -99,4 +140,5 @@ async def admin_delete_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
 
     user.is_deleted = True
+    user.is_active = False
     return {"message": "User berhasil dihapus"}

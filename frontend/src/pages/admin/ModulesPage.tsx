@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, BookOpen, Trash2, Edit3, CheckCircle, RefreshCw, Layers, Sparkles, X, PlusCircle } from 'lucide-react'
+import { Plus, BookOpen, Trash2, Edit3, CheckCircle, RefreshCw, Layers, Sparkles, X, PlusCircle, FileText } from 'lucide-react'
+import { SessionContentEditorModal } from '@/components/admin/SessionContentEditorModal'
 import api from '@/lib/api'
 
 interface AdminModuleItem {
@@ -50,6 +51,7 @@ export default function AdminModulesPage() {
   const [newSessionDesc, setNewSessionDesc] = useState('')
   const [newSessionDuration, setNewSessionDuration] = useState(30)
   const [creatingSession, setCreatingSession] = useState(false)
+  const [selectedSessionForContent, setSelectedSessionForContent] = useState<SessionItem | null>(null)
 
   useEffect(() => {
     fetchModules()
@@ -399,6 +401,13 @@ export default function AdminModulesPage() {
               )}
             </CardContent>
           </Card>
+                {selectedSessionForContent && (
+          <SessionContentEditorModal
+            sessionId={selectedSessionForContent.id}
+            sessionTitle={selectedSessionForContent.title}
+            onClose={() => setSelectedSessionForContent(null)}
+          />
+        )}
         </main>
       </div>
     </div>

@@ -1,212 +1,159 @@
-# ?? LMS Platform Enterprise
+# 🎓 LMS Enterprise Platform (v3.9.0)
 
-<div align="center">
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18.3+-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-38B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![MSSQL](https://img.shields.io/badge/Microsoft_SQL_Server-2022-CC292B.svg?style=flat&logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
-[![Redis](https://img.shields.io/badge/Redis-7.0+-DC382D.svg?style=flat&logo=redis&logoColor=white)](https://redis.io)
-[![MinIO](https://img.shields.io/badge/MinIO-S3_Storage-C72C48.svg?style=flat&logo=minio&logoColor=white)](https://min.io)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Cloudflare Tunnel](https://img.shields.io/badge/Cloudflare_Tunnel-Zero_Trust-F38020.svg?style=flat&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=flat&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql)](https://www.postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?style=flat&logo=redis)](https://redis.io)
+[![Playwright](https://img.shields.io/badge/Playwright-E2E-45ba4b?style=flat&logo=playwright)](https://playwright.dev)
+[![PWA](https://img.shields.io/badge/PWA-Offline%20First-5A0FC8?style=flat&logo=pwa)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Platform Pembelajaran Daring Skala Enterprise dengan Performa Tinggi, Keamanan Akses Modul Presisi, Evaluasi Kuis Aman, dan Streaming Video Responsif.**
-
-[Fitur Utama](#-fitur-utama) � [Arsitektur Sistem](#-arsitektur-sistem) � [Struktur Proyek](#-struktur-proyek) � [Panduan Instalasi](#-panduan-instalasi--deployment) � [Kredensial Pengujian](#-akun-dan-token-pengujian) � [Dokumentasi API](#-ringkasan-rest-api)
-
-</div>
+Platform Pembelajaran Digital (**Learning Management System / LMS**) berskala Enterprise yang dirancang untuk mendukung skalabilitas tinggi, multi-tenancy korporat, interaktivitas *real-time*, standar e-learning global (SCORM & xAPI), serta kapabilitas *offline-first* PWA.
 
 ---
 
-## ?? Ikhtisar Proyek
+## 🏛️ Arsitektur Sistem
 
-**LMS Platform Enterprise** adalah solusi Learning Management System yang dirancang khusus untuk memenuhi standar keandalan tinggi industri teknologi dan telekomunikasi. Dibangun dengan pendekatan *modular asynchronous*, sistem ini mengintegrasikan otentikasi berbasis peran (*Role-Based Access Control*), mekanisme penguncian modul berbasis token presisi, evaluasi pemahaman materi server-side yang aman dari kebocoran jawaban, serta pemutaran video beresolusi tinggi dengan dukungan *HTTP 206 Partial Content Range Streaming*.
-
----
-
-## ?? Fitur Utama
-
-### 1. ?? Strict Module Access Token Binding
-* Setiap modul pembelajaran diproteksi oleh token akses unik dengan masa kedaluwarsa dan kuota pemakaian dinamis.
-* Sistem secara tegas memvalidasi keterikatan token dengan modul tujuan (`token.module_id == target_module_id`). Token modul lain ditolak di level API backend.
-
-### 2. ??? Server-Side Quiz Engine (Anti-Leak Protection)
-* Evaluasi kuis pilihan ganda diproses dan dinilai sepenuhnya di server backend.
-* Respons evaluasi menyajikan persentase skor, status kelulusan, dan ringkasan jumlah benar/salah **tanpa membocorkan kunci jawaban atau opsi yang benar**, mencegah hafalan jawaban saat pengulangan kuis.
-
-### 3. ?? Live Cumulative Progress Synchronization
-* Status kelulusan dan kemajuan belajar dihitung secara matematis langsung dari basis data relasional MSSQL (`UserModuleProgress` & `SessionProgress`).
-* Tampilan progres persentase, sesi yang telah selesai, dan status modul diperbarui secara real-time pada kartu modul peserta.
-
-### 4. ?? High-Definition Media & HTTP 206 Partial Streaming
-* Pipeline penanganan media gambar dengan kompresi visual berkualitas tinggi (LANCZOS).
-* Dukungan penuh *HTTP 206 Partial Content Chunked Range Streaming* untuk video pembelajaran berukuran besar tanpa buffering berlebih.
-* Dual backend storage: Local Storage berkecepatan tinggi dengan auto-mirroring ke MinIO S3 Object Storage.
-
-### 5. ??? Comprehensive Admin & Instructor CMS
-* **Manajemen Modul & Sesi:** Pembuatan modul bertingkat, penambahan materi teks, gambar diagram, video, dan bank soal kuis.
-* **Token Generator:** Pembuatan token satuan maupun *bulk generator* dengan pengaturan kuota pemakaian.
-* **Cohorts & Angkatan:** Pengelompokan peserta pelatihan berbasis grup angkatan.
-* **Laporan & Analitik:** Perhitungan rasio kelulusan peserta per modul secara otomatis.
-
----
-
-## ??? Arsitektur Sistem
-
-```mermaid
-flowchart TD
-    Client["Browser Klien / Frontend (React + Vite + TS)"]
-    Cloudflare["Cloudflare Zero Trust Tunnel"]
-    Nginx["Nginx Reverse Proxy & Static Cache"]
-    FastAPI["FastAPI Async Backend (Python 3.11)"]
-    MSSQL[("Microsoft SQL Server 2022")]
-    Redis[("Redis 7 (Cache & Session)")]
-    Celery["Celery Worker & Celery Beat"]
-    MinIO[("MinIO S3 Object Storage")]
-
-    Client -->|HTTPS / TLS| Cloudflare
-    Cloudflare -->|HTTP 8088| Nginx
-    Nginx -->|Static Assets| Client
-    Nginx -->|Proxy /api/v1| FastAPI
-    FastAPI -->|Async SQLAlchemy / ODBC| MSSQL
-    FastAPI -->|Token Cache & Rate Limit| Redis
-    FastAPI -->|Async Tasks| Celery
-    Celery -->|Task Broker| Redis
-    FastAPI -->|Byte Range Streaming| MinIO
+```
+                                  ┌───────────────────────────────┐
+                                  │      Client Applications      │
+                                  │  (Web Browser / Mobile PWA)   │
+                                  └──────────────┬────────────────┘
+                                                 │ HTTPS / WSS
+                                                 ▼
+                                  ┌───────────────────────────────┐
+                                  │         Nginx Gateway         │
+                                  │ (Reverse Proxy, SSL, Gzip)    │
+                                  └──────────────┬────────────────┘
+                                                 │
+                   ┌─────────────────────────────┴─────────────────────────────┐
+                   ▼                                                           ▼
+    ┌──────────────────────────────┐                            ┌──────────────────────────────┐
+    │     FastAPI Core Backend     │                            │     Realtime WebSocket Hub   │
+    │  - REST API & Endpoints      │                            │  - Presence & Room Heartbeat │
+    │  - JWT & SSO SAML/OIDC Auth  │                            │  - Live Q&A Broadcast        │
+    │  - Payment Webhooks          │                            │  - Study Room Peer Messaging │
+    │  - SCORM / xAPI Engine       │                            └──────────────┬───────────────┘
+    └──────────────┬───────────────┘                                           │
+                   │                                                           │
+         ┌─────────┴─────────┐                                                 │
+         ▼                   ▼                                                 ▼
+┌─────────────────┐ ┌─────────────────┐                               ┌─────────────────┐
+│   PostgreSQL    │ │    MinIO S3     │                               │   Redis Cache   │
+│  - Relational   │ │  - Video Media  │                               │  - Session Keys │
+│  - Zero-DDL JSON│ │  - Certificates │                               │  - Pub/Sub Chan │
+│  - Audit Logs   │ │  - SCORM Assets │                               │  - Rate Limiter │
+└─────────────────┘ └─────────────────┘                               └────────┬────────┘
+                                                                               │
+                                                                               ▼
+                                                              ┌─────────────────────────────────┐
+                                                              │       Celery Async Workers      │
+                                                              │  - PDF Certificate Generator    │
+                                                              │  - Video Transcoding & HLS      │
+                                                              │  - Transaction Email Dispatcher │
+                                                              └─────────────────────────────────┘
 ```
 
 ---
 
-## ??? Tech Stack
+## 🚀 Fitur Enterprise (Tier 1 s/d Tier 12)
 
-| Domain | Teknologi | Keterangan |
+| Tier | Modul | Ringkasan Kemampuan |
 | :--- | :--- | :--- |
-| **Backend API** | **FastAPI** (Python 3.11) | Framework asinkron berkecepatan tinggi dengan validasi Pydantic v2 |
-| **Database** | **Microsoft SQL Server 2022** | RDBMS kelas enterprise dengan driver ODBC 18 & SQLAlchemy 2.0 async |
-| **Frontend** | **React 18**, **TypeScript**, **Vite** | Single Page Application modern dengan Tailwind CSS & Radix UI |
-| **Cache & Task Queue** | **Redis 7** & **Celery 5** | Manajemen sesi terdistribusi, rate limiting, dan pemrosesan background |
-| **Object Storage** | **MinIO** (S3-Compatible) | Penyimpanan aset media gambar dan video demonstrasi terpusat |
-| **Web Server & Proxy** | **Nginx** (Alpine) | Reverse proxy, static file server, dan dynamic DNS resolver |
-| **Ingress & Networking** | **Cloudflare Tunnel** | Akses publik aman tanpa port forwarding langsung ke internet |
-| **Containerization** | **Docker & Docker Compose** | Multi-container orchestration terisolasi dan reproducible |
+| **Tier 1** | **Core Foundation & Security** | Otentikasi aman JWT `httpOnly`, role-based access (Student, Instructor, Superadmin), sertifikat PDF ber-QR code unik, anti-cheat tab-switch detection. |
+| **Tier 2** | **Analytics & Batch Management** | Dashboard analitik admin dengan metrik kelulusan, rating & review bintang, serta batch CSV question generator. |
+| **Tier 3** | **Storage & Zero-DDL Database** | Skema database *Zero-DDL Extensible* (`meta_data` JSON), MinIO S3 Multipart Upload, dan HTTP 206 Partial Content Video Streaming. |
+| **Tier 4** | **Product Discovery & Intel** | Sintesis riset produk komprehensif, analisis friksi persona pembelajar, dan pohon peluang pengembangan. |
+| **Tier 5** | **Realtime Multi-User Engine** | WebSocket live presence, polling interaktif, broadcast pengumuman instan, dan Virtual Study Rooms. |
+| **Tier 6** | **AI Tutor & Adaptive Quizzes** | Asisten belajar AI in-session, penjelasan mendalam pembahasan kuis, dan penyesuaian tingkat kesulitan dinamis (Hard/Medium/Easy). |
+| **Tier 7** | **E2E Testing & Production Runbook** | Suite pengujian Playwright E2E lintas browser, benchmark beban k6 (1.000+ VUs), konfigurasi `docker-compose.prod.yml`, dan SOP mitigasi insiden. |
+| **Tier 8** | **B2B Multi-Tenancy & White-Label** | Routing otomatis berbasis subdomain (`host`), isolasi data per tenant, injeksi tema CSS dinamis (`--primary`, `--secondary`), dan panel branding logo. |
+| **Tier 9** | **Monetization & Invoicing** | Integrasi payment gateway ganda (**Midtrans Snap QRIS/VA** & **Stripe Checkout**), promo kupon diskon persentase/flat, dan invoice PDF otomatis. |
+| **Tier 10** | **SCORM & xAPI E-Learning Engine** | Parser manifest XML (`imsmanifest.xml`), jembatan JavaScript runtime CMI (`window.API` & `window.API_1484_11`), pemutar sandboxed iframe, dan LRS Store xAPI. |
+| **Tier 11** | **Enterprise SSO & Directory Sync** | Otentikasi korporat **SAML 2.0** & **OpenID Connect (OIDC)** (Azure AD, Okta, Keycloak), *Just-In-Time (JIT) Provisioning*, dan sinkronisasi direktori LDAP. |
+| **Tier 12** | **PWA Offline-First & Web Push** | Service Worker caching, penyimpanan lokal blob video & PDF via IndexedDB, *Background Mutation Sync Queue*, dan Web Push VAPID notifications. |
 
 ---
 
-## ?? Struktur Proyek
+## 🛠️ Tech Stack
 
-```text
-lms/
-+-- backend/                  # REST API Backend (FastAPI)
-�   +-- app/
-�   �   +-- api/v1/          # Route handlers & endpoints
-�   �   +-- core/            # Config, database session, security, storage
-�   �   +-- models/          # SQLAlchemy relational data models
-�   �   +-- schemas/         # Pydantic request/response schemas
-�   �   +-- services/        # Business logic & domain services
-�   +-- Dockerfile           # Backend container build specification
-�   +-- requirements.txt     # Python production dependencies
-�   +-- seed_data.py         # Initial database migration & seeding
-+-- frontend/                 # Web Client Frontend (React + Vite)
-�   +-- src/
-�   �   +-- components/      # UI components (Radix + Tailwind)
-�   �   +-- features/        # Feature-based modular logic
-�   �   +-- pages/           # Application views (User & Admin CMS)
-�   �   +-- router/          # Client-side router configuration
-�   �   +-- store/           # Global state management (Zustand)
-�   +-- Dockerfile           # Frontend multi-stage production build
-�   +-- package.json         # Node.js dependencies & scripts
-+-- docker-compose.yml        # Orchestration configuration
-+-- docker-compose.prod.yml   # Production container stack overrides
-+-- .env.example              # Environment variables template
-+-- .gitattributes            # Line endings normalization (LF)
-+-- .gitignore                # Strict secret & binary file exclusions
-+-- CHANGELOG.md              # Versioning & release changelog
-+-- README.md                 # Project documentation
-```
+- **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0 (Async), Pydantic v2, Alembic, Celery, ReportLab.
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti.
+- **Database & Cache**: PostgreSQL 16, Redis 7.
+- **Storage**: MinIO S3 Compatible Object Storage.
+- **Testing & QA**: Pytest, pytest-asyncio, Playwright, k6 Load Tester.
+- **DevOps & Containers**: Docker, Docker Compose, Nginx, PowerShell & Bash automation scripts.
 
 ---
 
-## ?? Panduan Instalasi & Deployment
+## 💻 Panduan Instalasi Lokal (Development)
 
-### Prasyarat Sistem
-* **Docker Engine** v24+ dan **Docker Compose** v2+
-* **Python** 3.11+ (untuk pengembangan lokal)
-* **Node.js** 20+ & **npm** (untuk pengembangan lokal)
+### 1. Prasyarat Sistem
+- **Node.js** >= 18.x
+- **Python** >= 3.11
+- **Docker & Docker Compose** (Opsional untuk PostgreSQL, Redis, MinIO lokal)
 
-### Langkah 1: Kloning & Konfigurasi Environment
+### 2. Setup Backend
 ```bash
-# Clone repository
-git clone https://github.com/consep33t/lms-platform.git
-cd lms-platform
+cd backend
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 
-# Salin template environment
+pip install -r requirements.txt
 cp .env.example .env
-cp .env.example backend/.env
+
+# Jalankan server FastAPI
+uvicorn app.main:app --reload --port 8000
 ```
 
-Sesuaikan nilai variabel pada `.env` (Password DB, Secret Key, dsb.).
-
-### Langkah 2: Menjalankan Container Stack
+### 3. Setup Frontend
 ```bash
-# Build dan jalankan seluruh service di latar belakang
-docker compose -f docker-compose.prod.yml up -d --build
+cd frontend
+npm install
+npm run dev
 ```
+Akses aplikasi melalui browser di `http://localhost:5173`.
 
-### Langkah 3: Inisialisasi Skema & Data Awal
+---
+
+## 🐳 Deployment Produksi (Docker Compose)
+
+Jalankan seluruh ekosistem (FastAPI 4-workers, PostgreSQL, Redis, Celery, Nginx) dengan satu perintah:
+
 ```bash
-# Jalankan database migration & data seeding
-docker exec -it lms_backend python /app/seed_data.py
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-Setelah kontainer aktif, aplikasi dapat diakses di:
-* **Frontend Web:** `http://localhost:8088` atau domain produksi `https://lms.consep33t.my.id`
-* **Interactive API Docs:** `https://lms.consep33t.my.id/docs`
-* **API Health Check:** `https://lms.consep33t.my.id/api/v1/health`
+---
+
+## 🧪 Pengujian Otomatis
+
+### Menjalankan Master Pytest Suite (47+ Tests)
+```bash
+cd backend
+pytest tests/ -v
+```
+
+### Menjalankan Playwright End-to-End Tests
+```bash
+cd frontend
+npx playwright test
+```
+
+### Menjalankan k6 Load Testing Benchmarks
+```bash
+# Uji beban REST API (500 Concurrent VUs)
+k6 run tests/load/k6_api_benchmark.js
+
+# Uji beban WebSocket Realtime (1,000 Concurrent Connections)
+k6 run tests/load/k6_websocket_load.js
+```
 
 ---
 
-## ?? Akun dan Token Pengujian
-
-| Tipe Akun | Email Login | Kata Sandi | Akses Modul / Token |
-| :--- | :--- | :--- | :--- |
-| **Superadmin** | `admin@lms.alfanet.id` | `AdminPass123!` | Akses Penuh CMS Admin & Manajemen Modul |
-| **Peserta 1 (Budi)** | `budi.santoso@lms.alfanet.id` | `PesertaBudi2026!` | `NET-ADV-2026` *(Jaringan Komputer & Subnetting)* |
-| **Peserta 2 (Siti)** | `siti.aminah@lms.alfanet.id` | `PesertaSiti2026!` | `ZEROTRUST-SEC-2026` *(Keamanan Siber Zero Trust)* |
-| **Peserta 3 (Umum)** | `peserta@lms.alfanet.id` | `PesertaPass123!` | `MIKROTIK-PRO-2026` *(Mastering MikroTik)* |
-| **Modul Enterprise** | *Akun Peserta Terdaftar* | *Password Masing-masing* | `CLOUDNATIVE-PRO-2026` *(Kubernetes & GitOps)* |
-
----
-
-## ?? Ringkasan REST API
-
-| Method | Endpoint | Deskripsi | Hak Akses |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/login` | Otentikasi dan penerbitan JWT Access & Refresh Token | Publik |
-| `GET` | `/api/v1/modules` | Mendapatkan katalog seluruh modul yang dipublikasikan | Peserta / Admin |
-| `GET` | `/api/v1/modules/{id}/user-status` | Mengambil status kemajuan kumulatif & kelulusan modul | Peserta |
-| `POST` | `/api/v1/modules/{id}/unlock` | Membuka akses modul dengan token khusus yang valid | Peserta |
-| `GET` | `/api/v1/sessions/{id}` | Mendapatkan materi sesi pembelajaran, media, dan soal kuis | Peserta |
-| `POST` | `/api/v1/sessions/{id}/submit` | Mengirim jawaban kuis & evaluasi kelulusan server-side | Peserta |
-| `GET` | `/api/v1/media/{id}/stream` | Streaming video/gambar dengan dukungan HTTP 206 Range | Peserta / Admin |
-| `POST` | `/api/v1/admin/modules` | Membuat modul pembelajaran baru | Admin / Instruktur |
-| `POST` | `/api/v1/admin/tokens/bulk` | Menerbitkan token akses modul secara massal | Admin |
-| `GET` | `/api/v1/admin/reports/module-completion` | Mengambil laporan analitik rasio kelulusan peserta | Admin |
-
----
-
-## ?? Kebijakan Keamanan & Secret Hygiene
-
-1. **No Leaked Credentials:** File `.env` dan kredensial produksi dilindungi oleh `.gitignore` dan dilarang masuk ke tracking Git.
-2. **Password Hashing:** Seluruh kata sandi akun dienkripsi menggunakan algoritma `bcrypt` dengan salt dinamis.
-3. **Stateless Authorization:** Verifikasi identitas pengguna menggunakan JWT (`HS256`) dengan waktu kedaluwarsa yang terkonfigurasi.
-4. **Rate Limiting:** Proteksi endpoint sensitif seperti login dan verifikasi token dari serangan *brute force* menggunakan Redis rate limiter.
-
----
-
-## ?? Lisensi & Kontributor
-
-Dikembangkan oleh **[consep33t](https://github.com/consep33t)**.  
-Hak Cipta � 2026 LMS Platform Enterprise. Seluruh hak cipta dilindungi undang-undang di bawah lisensi [MIT](LICENSE).
+## 📄 Lisensi
+Didistribusikan di bawah lisensi **MIT License**. Lihat file `LICENSE` untuk informasi selengkapnya.

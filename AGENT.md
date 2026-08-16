@@ -56,36 +56,45 @@ Learning Management System (LMS) berbasis token akses modul.
   - Untuk aktifkan: set STORAGE_DRIVER=s3 di .env
 
 ## DATABASE SCHEMAS
-Lihat PROJECT_SPEC.md �3 untuk semua tabel.
+Lihat PROJECT_SPEC.md 3 untuk semua tabel.
 Key tables: users, modules, module_sessions, questions, question_options,
 module_tokens, token_usages, user_module_progress, session_progress,
 user_answers, media_files, session_contents, content_watch_progress,
 cohorts, cohort_members, module_assignments, notifications, audit_logs
 
-## CURRENT STATE � UPDATE INI SETIAP SELESAI FASE
+## CURRENT STATE  UPDATE INI SETIAP SELESAI FASE
 ```
-Phase  1: [? DONE] Setup awal � scaffold backend + frontend + docker-compose
-Phase  2: [? TODO] Database models + Alembic migration awal
-Phase  3: [? TODO] Auth (JWT + refresh token + role guard)
-Phase  4: [? TODO] Storage abstraction (sudah di-scaffold, perlu implementasi penuh)
-Phase  5: [? TODO] Upload endpoint + signed URL + X-Accel-Redirect
-Phase  6: [? TODO] CMS modul & sesi: CRUD + upload media
-Phase  7: [? TODO] Token modul: generate, expired_at, validasi
-Phase  8: [? TODO] Celery worker: transcode video, PDF, cleanup
-Phase  9: [? TODO] Flow belajar user: verifikasi token ? sesi ? submit ? skor
-Phase 10: [? TODO] Riwayat, modul aktif, profil, pengaturan
-Phase 11: [? TODO] Cohort & assignment + deadline
-Phase 12: [? TODO] Laporan admin + export PDF/Excel
-Phase 13: [? TODO] Notifikasi in-app
-Phase 14: [? TODO] Anti-cheat dasar (tab-switch, randomisasi soal)
-Phase 15: [? TODO] Polish UI/UX, error handling, responsive
-Phase 16: [? TODO] Testing
+Phase  1: [✅ DONE] Setup awal — scaffold backend + frontend + docker-compose
+Phase  2: [✅ DONE] Database models + Alembic migration awal
+Phase  3: [✅ DONE] Auth (JWT + refresh token + role guard + JWT blacklist logout)
+Phase  4: [✅ DONE] Storage abstraction (LocalDisk + S3/MinIO + ensure_bucket_exists)
+Phase  5: [✅ DONE] Upload endpoint + signed URL + X-Accel-Redirect
+Phase  6: [✅ DONE] CMS modul & sesi: CRUD + upload media
+Phase  7: [✅ DONE] Token modul: generate, expired_at, validasi (TokenService impl)
+Phase  8: [✅ DONE] Celery worker: video metadata & thumbnail, transactional SMTP email, cleanup sweep, cert generator
+Phase  9: [✅ DONE] Flow belajar user: verifikasi token → sesi → submit → skor (flush bug fixed)
+Phase 10: [✅ DONE] Riwayat, modul aktif, profil interaktif, ubah password (UserService impl)
+Phase 11: [✅ DONE] Cohort & assignment + deadline (Backend API + Frontend CohortsPage)
+Phase 12: [✅ DONE] Laporan admin + export CSV/Excel (ReportsPage + export endpoints)
+Phase 13: [✅ DONE] Notifikasi in-app (NotificationService + endpoints implemented)
+Phase 14: [✅ DONE] Anti-cheat sistem (Backend flag API + Frontend visibilitychange tab switch detector)
+Phase 15: [✅ DONE] Polish UI/UX, responsive, sertifikat kelulusan & portal verifikasi publik (/verify/:code)
+Phase 16: [✅ DONE] Testing Suite & CI/CD Pipeline (GitHub Actions + Pytest suite + CSV Import)
+
+Last audit & features: 2026-08-16 — Enterprise Database Redesign, Zero-DDL JSON Extensibility, Composite Indexing, and MinIO Multipart Storage Overhaul completed.
+See CHANGELOG.md [3.0.0] for full list.
 ```
+
+
+
+
+
+
 
 ## RULES UNTUK AGENT
 1. **Baca PROGRESS.md dulu** sebelum mulai task apapun
 2. **Update PROGRESS.md + CHANGELOG.md** setelah selesai setiap sub-task
-3. **Jangan skip fase** � pastikan fase sebelumnya bisa dijalankan sebelum lanjut
+3. **Jangan skip fase**  pastikan fase sebelumnya bisa dijalankan sebelum lanjut
 4. **Anti-halusinasi**: selalu `view_file` sebelum edit, selalu grep sebelum asumsi
 5. **Sebelum deploy ke server**: test lokal dulu dengan docker compose up
 6. **Port lokal yang digunakan** (jangan bentrok):

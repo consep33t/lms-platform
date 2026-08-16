@@ -1,38 +1,31 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import * as React from 'react'
+import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-export interface SpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  className?: string;
-  color?: 'emerald' | 'blue' | 'slate' | 'white';
+export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 /**
- * Atomic Spinner Component
- * Smooth loading indicator.
+ * Unified Atomic Spinner Component
  */
-export const Spinner: React.FC<SpinnerProps> = ({
-  size = 'md',
-  className = '',
-  color = 'emerald',
-}) => {
+export const Spinner: React.FC<SpinnerProps> = ({ size = 'md', className, ...props }) => {
   const sizeStyles = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
     lg: 'w-8 h-8',
     xl: 'w-12 h-12',
-  };
-
-  const colorStyles = {
-    emerald: 'text-emerald-600 dark:text-emerald-400',
-    blue: 'text-blue-600 dark:text-blue-400',
-    slate: 'text-slate-600 dark:text-slate-400',
-    white: 'text-white',
-  };
+  }
 
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <Loader2 className={`animate-spin ${sizeStyles[size]} ${colorStyles[color]}`} />
+    <div
+      role="status"
+      aria-label="Memuat..."
+      className={cn('flex items-center justify-center text-primary', className)}
+      {...props}
+    >
+      <Loader2 className={cn('animate-spin', sizeStyles[size])} />
+      <span className="sr-only">Memuat...</span>
     </div>
-  );
-};
+  )
+}

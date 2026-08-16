@@ -30,7 +30,17 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("⚠️  Redis tidak tersedia — cache dinonaktifkan")
 
-    # 2. Storage — ensure MinIO bucket exists if S3 driver is active
+    # 2. Database Tables — Ensure all schema tables exist safely
+    try:
+        from app.core.database import engine, Base
+        import app.models  # noqa: F401 - Register all models
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Database schema tables verified")
+    except Exception as db_err:
+        logger.warning(f"⚠️  Database schema auto-init warning: {db_err}")
+
+    # 3. Storage — ensure MinIO bucket exists if S3 driver is active
     if settings.STORAGE_DRIVER == "s3":
         from app.core.storage.factory import get_storage_backend
         storage = get_storage_backend()

@@ -1,61 +1,72 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import * as React from 'react'
+import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-/**
- * Props for the atomic Button component
- */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  variant?: 'default' | 'primary' | 'destructive' | 'danger' | 'outline' | 'secondary' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'md' | 'lg' | 'icon'
+  isLoading?: boolean
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
 }
 
 /**
- * Atomic Button Component
- * Reusable, accessible, and supports loading states & icon adornments.
+ * Unified Atomic Button Component
+ * Supports design tokens, forwardRef, loading spinners, and icon prefix/suffixes.
  */
-export const Button: React.FC<ButtonProps> = ({
-  children,
-  variant = 'primary',
-  size = 'md',
-  isLoading = false,
-  leftIcon,
-  rightIcon,
-  className = '',
-  disabled,
-  ...props
-}) => {
-  // Base styling for accessibility and transitions
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = 'default',
+      size = 'default',
+      isLoading = false,
+      leftIcon,
+      rightIcon,
+      children,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const baseStyles =
+      'inline-flex items-center justify-center font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none'
 
-  // Size variants
-  const sizeStyles = {
-    sm: 'px-3 py-1.5 text-xs gap-1.5',
-    md: 'px-4 py-2 text-sm gap-2',
-    lg: 'px-6 py-3 text-base gap-2.5',
-  };
+    // Semantic variant styles using dynamic CSS variable theme tokens
+    const variantStyles = {
+      default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
+      primary: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',
+      secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
+      destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+      danger: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+      outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
+      ghost: 'hover:bg-accent hover:text-accent-foreground',
+      link: 'text-primary underline-offset-4 hover:underline shadow-none',
+    }
 
-  // Color variants
-  const variantStyles = {
-    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500 shadow-sm',
-    secondary: 'bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 focus:ring-slate-500',
-    outline: 'border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-emerald-500',
-    danger: 'bg-rose-600 hover:bg-rose-700 text-white focus:ring-rose-500 shadow-sm',
-    ghost: 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 focus:ring-slate-400',
-  };
+    // Size variants
+    const sizeStyles = {
+      default: 'h-9 px-4 py-2 text-sm gap-2',
+      sm: 'h-8 px-3 py-1.5 text-xs gap-1.5 rounded-md',
+      md: 'h-9 px-4 py-2 text-sm gap-2',
+      lg: 'h-10 px-6 py-2.5 text-base gap-2.5 rounded-lg',
+      icon: 'h-9 w-9 p-0',
+    }
 
-  return (
-    <button
-      className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
-      disabled={disabled || isLoading}
-      {...props}
-    >
-      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-      {!isLoading && leftIcon}
-      <span>{children}</span>
-      {!isLoading && rightIcon}
-    </button>
-  );
-};
+    return (
+      <button
+        ref={ref}
+        className={cn(baseStyles, sizeStyles[size], variantStyles[variant], className)}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
+        {!isLoading && leftIcon && <span className="shrink-0">{leftIcon}</span>}
+        {children && <span>{children}</span>}
+        {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+      </button>
+    )
+  }
+)
+
+Button.displayName = 'Button'

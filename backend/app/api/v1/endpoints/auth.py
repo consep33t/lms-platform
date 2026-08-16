@@ -1,7 +1,9 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from app.core.config import settings
 from app.services.auth_service import AuthService
 from app.schemas.user import (
     UserCreate,
@@ -14,6 +16,10 @@ from app.schemas.user import (
 )
 from app.core.dependencies import get_current_user_id
 from app.repositories.user_repo import UserRepository
+
+logger = logging.getLogger(__name__)
+# Cookie is secure (HTTPS-only) unless running in DEBUG/local development mode
+_COOKIE_SECURE: bool = not settings.DEBUG
 
 router = APIRouter()
 
@@ -52,7 +58,7 @@ async def google_register(req: GoogleRegisterRequest, response: Response, db: As
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=False,
+            secure=_COOKIE_SECURE,
             samesite="lax",
             max_age=7 * 24 * 60 * 60,
         )
@@ -78,24 +84,34 @@ async def google_register(req: GoogleRegisterRequest, response: Response, db: As
 
 @router.post("/login", response_model=TokenResponse)
 async def login(login_in: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
-    service = AuthService(db)
-    user, access_token, refresh_token = await service.authenticate(login_in)
+    try:
+        service = AuthService(db)
+        user, access_token, refresh_token = await service.authenticate(login_in)
 
-    # Set httpOnly cookie for refresh token
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=False,  # Set True in production with HTTPS
-        samesite="lax",
-        max_age=7 * 24 * 60 * 60,
-    )
+        # Set httpOnly cookie for refresh token
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=_COOKIE_SECURE,
+            samesite="lax",
+            max_age=7 * 24 * 60 * 60,
+        )
 
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserResponse.model_validate(user)
-    )
+        user_data = UserResponse.model_validate(user)
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=user_data
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"❌ Error saat autentikasi login untuk '{login_in.email}': {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Terjadi kesalahan internal pada server saat memproses login. ({type(exc).__name__})"
+        )
 
 
 @router.post("/refresh")

@@ -1,20 +1,43 @@
-import { useState } from 'react'
-import { useAuthStore } from '@/store/authStore'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
-import { GraduationCap, Mail, Lock, Sparkles, ArrowRight, ShieldAlert } from 'lucide-react'
-import api from '@/lib/api'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useAuthStore } from '@/store/authStore'
+import { Button } from '@/components/atoms/Button'
+import { Input } from '@/components/atoms/Input'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/atoms/Card'
+import { GraduationCap, Mail, Lock, ArrowRight, ShieldAlert, KeyRound } from 'lucide-react'
+import api from '@/lib/api'
+
+interface SSOProviderItem {
+  id: number
+  name: string
+  type: string
+  is_active: boolean
+}
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [ssoProviders, setSsoProviders] = useState<SSOProviderItem[]>([])
+  const [ssoLoading, setSsoLoading] = useState(false)
+
   const setAuth = useAuthStore((s) => s.setAuth)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // Check if tenant has active SSO providers
+    api
+      .get<SSOProviderItem[]>('/sso/providers')
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setSsoProviders(res.data.filter((p) => p.is_active))
+        }
+      })
+      .catch(() => {
+        // Silently ignore if no SSO configured or tenant is default
+      })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,23 +52,44 @@ export function LoginForm() {
         navigate('/')
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Gagal masuk. Periksa email & kata sandi Anda.')
+      const detail = err.response?.data?.detail
+      if (typeof detail === 'string') {
+        setError(detail)
+      } else if (Array.isArray(detail)) {
+        setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(', '))
+      } else {
+        setError('Gagal masuk. Periksa email & kata sandi Anda atau status koneksi server.')
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  const handleSSOLogin = async (providerId: number) => {
+    setSsoLoading(true)
+    setError(null)
+    try {
+      const res = await api.get<{ auth_url: string }>(`/sso/login/${providerId}`)
+      if (res.data?.auth_url) {
+        window.location.href = res.data.auth_url
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Gagal memulai autentikasi SSO Korporat.')
+      setSsoLoading(false)
+    }
+  }
+
   return (
-    <Card className="w-full max-w-md mx-auto shadow-2xl border-slate-800 bg-slate-900/90 backdrop-blur-md text-slate-100 overflow-hidden">
+    <Card className="w-full shadow-2xl border-border bg-card/95 backdrop-blur-md text-card-foreground overflow-hidden">
       <div className="h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-emerald-500" />
       <CardHeader className="space-y-2 text-center pt-6">
-        <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-primary to-indigo-500 flex items-center justify-center shadow-lg shadow-primary/30 mx-auto mb-1">
-          <GraduationCap className="h-6 w-6 text-white" />
+        <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-lg shadow-primary/20 mx-auto mb-1">
+          <GraduationCap className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl font-black tracking-tight text-white">
+        <CardTitle className="text-2xl font-black tracking-tight">
           Masuk ke Portal LMS
         </CardTitle>
-        <CardDescription className="text-slate-400 text-xs">
+        <CardDescription className="text-muted-foreground text-xs">
           Gunakan <strong>Email Resmi LMS</strong> atau <strong>Email Pribadi</strong> terdaftar Anda.
         </CardDescription>
       </CardHeader>
@@ -53,64 +97,79 @@ export function LoginForm() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4 pt-2">
           {error && (
-            <div className="p-3 text-xs rounded-xl bg-amber-500/10 text-amber-300 font-medium border border-amber-500/30 flex items-start gap-2 leading-relaxed">
-              <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3 text-xs rounded-xl bg-destructive/10 text-destructive font-medium border border-destructive/20 flex items-start gap-2 leading-relaxed">
+              <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="loginEmail" className="text-xs font-semibold text-slate-200">
+            <label htmlFor="loginEmail" className="text-xs font-semibold text-foreground">
               Email LMS / Email Pribadi
-            </Label>
-            <div className="relative">
-              <Mail className="h-4 w-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                id="loginEmail"
-                type="text"
-                placeholder="nama@student.lms.alfanet.id / user@gmail.com"
-                className="pl-9 bg-slate-950 border-slate-800 text-slate-100 text-xs h-10"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+            </label>
+            <Input
+              id="loginEmail"
+              type="text"
+              placeholder="nama@student.lms.alfanet.id / user@gmail.com"
+              leftIcon={<Mail className="h-4 w-4" />}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="loginPass" className="text-xs font-semibold text-slate-200">
+              <label htmlFor="loginPass" className="text-xs font-semibold text-foreground">
                 Kata Sandi (Password)
-              </Label>
+              </label>
               <Link to="/forgot-password" className="text-[11px] text-primary hover:underline">
                 Lupa sandi?
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="h-4 w-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                id="loginPass"
-                type="password"
-                placeholder="••••••••"
-                className="pl-9 bg-slate-950 border-slate-800 text-slate-100 text-xs h-10"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            <Input
+              id="loginPass"
+              type="password"
+              placeholder="••••••••"
+              leftIcon={<Lock className="h-4 w-4" />}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 pb-6">
           <Button
             type="submit"
-            className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-bold text-xs gap-2 shadow-lg shadow-primary/25"
-            disabled={loading}
+            className="w-full h-10 font-bold text-xs gap-2 shadow-lg shadow-primary/25"
+            disabled={loading || ssoLoading}
+            isLoading={loading}
           >
-            {loading ? 'Memverifikasi Akun...' : 'Masuk ke Platform'}
+            Masuk ke Platform
           </Button>
 
-          <div className="pt-2 border-t border-slate-800/80 w-full text-center text-xs text-slate-400 flex items-center justify-center gap-1.5">
+          {/* Corporate SSO Login Options */}
+          {ssoProviders.length > 0 && (
+            <div className="w-full space-y-2 pt-2 border-t border-border">
+              {ssoProviders.map((provider) => (
+                <Button
+                  key={provider.id}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 text-xs"
+                  onClick={() => handleSSOLogin(provider.id)}
+                  disabled={loading || ssoLoading}
+                  leftIcon={<KeyRound className="w-3.5 h-3.5 text-primary" />}
+                >
+                  Login dengan {provider.name} ({provider.type.toUpperCase()})
+                </Button>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-border w-full text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <span>Belum memiliki akun peserta?</span>
             <Link to="/register" className="text-primary font-bold hover:underline inline-flex items-center gap-1">
               Daftar Sekarang <ArrowRight className="h-3 w-3" />

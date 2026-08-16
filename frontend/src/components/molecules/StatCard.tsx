@@ -1,19 +1,20 @@
-import React from 'react';
+import React from 'react'
+import { cn } from '@/lib/utils'
 
 export interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
+  title: string
+  value: string | number
+  icon: React.ReactNode
   trend?: {
-    value: string;
-    isPositive: boolean;
-  };
-  className?: string;
+    value: string
+    isPositive: boolean
+  }
+  className?: string
 }
 
 /**
  * Molecule StatCard Component
- * Dashboard metric summary card.
+ * Dashboard metric summary card adhering to dynamic theme tokens.
  */
 export const StatCard: React.FC<StatCardProps> = ({
   title,
@@ -23,19 +24,19 @@ export const StatCard: React.FC<StatCardProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm flex items-center justify-between ${className}`}>
+    <div className={cn('p-5 bg-card border border-border text-card-foreground rounded-xl shadow-sm flex items-center justify-between transition-all hover:shadow-md', className)}>
       <div>
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</p>
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</h3>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+        <h3 className="text-2xl font-bold text-foreground mt-1">{value}</h3>
         {trend && (
-          <p className={`text-xs font-medium mt-1 ${trend.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-            {trend.isPositive ? '↑' : '↓'} {trend.value}
+          <p className={cn('text-xs font-medium mt-1 flex items-center gap-0.5', trend.isPositive ? 'text-emerald-500' : 'text-rose-500')}>
+            <span>{trend.isPositive ? '↑' : '↓'}</span> {trend.value}
           </p>
         )}
       </div>
-      <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+      <div className="p-3 bg-primary/10 text-primary rounded-xl shrink-0">
         {icon}
       </div>
     </div>
-  );
-};
+  )
+}

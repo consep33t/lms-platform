@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 from app.models.user import UserRole
 
 
@@ -8,7 +9,16 @@ class UserBase(BaseModel):
     full_name: str
     role: UserRole = UserRole.user
     is_active: bool = True
-    meta_data: dict = {}
+    meta_data: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    @field_validator("meta_data", mode="before")
+    @classmethod
+    def validate_meta_data(cls, v: Any) -> dict:
+        if v is None:
+            return {}
+        if isinstance(v, dict):
+            return v
+        return {}
 
 
 class UserCreate(BaseModel):
@@ -67,18 +77,18 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    personal_email: str | None = None
-    custom_lms_email: str | None = None
-    is_approved: bool = True
-    approval_status: str = "approved"
-    registration_source: str = "manual"
-    phone_number: str | None = None
-    institution: str | None = None
-    rejection_reason: str | None = None
-    approved_at: datetime | None = None
-    avatar_media_id: int | None = None
-    created_at: datetime
-    updated_at: datetime
+    personal_email: Optional[str] = None
+    custom_lms_email: Optional[str] = None
+    is_approved: Optional[bool] = True
+    approval_status: Optional[str] = "approved"
+    registration_source: Optional[str] = "manual"
+    phone_number: Optional[str] = None
+    institution: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    avatar_media_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class UserLogin(BaseModel):

@@ -78,6 +78,7 @@ class UserRepository:
 
     async def save_refresh_token(self, token: RefreshToken) -> RefreshToken:
         self.db.add(token)
+        await self.db.flush()
         return token
 
     async def get_refresh_token(self, token_str: str) -> RefreshToken | None:

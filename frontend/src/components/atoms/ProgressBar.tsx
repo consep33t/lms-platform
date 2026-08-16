@@ -1,53 +1,45 @@
-import React from 'react';
+import * as React from 'react'
+import * as ProgressPrimitive from '@radix-ui/react-progress'
+import { cn } from '@/lib/utils'
 
-export interface ProgressBarProps {
-  progress: number; // 0 to 100
-  size?: 'sm' | 'md' | 'lg';
-  color?: 'emerald' | 'blue' | 'indigo' | 'amber';
-  showPercentage?: boolean;
-  className?: string;
+export interface ProgressBarProps extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
+  value?: number
+  showPercentage?: boolean
+  indicatorClassName?: string
 }
 
 /**
- * Atomic ProgressBar Component
- * Renders an animated, rounded progress indicator.
+ * Unified Atomic Progress Bar Component
+ * Built on Radix UI with smooth width transitions and dynamic theme tokens.
  */
-export const ProgressBar: React.FC<ProgressBarProps> = ({
-  progress,
-  size = 'md',
-  color = 'emerald',
-  showPercentage = false,
-  className = '',
-}) => {
-  const clampedProgress = Math.min(100, Math.max(0, progress));
-
-  const heightStyles = {
-    sm: 'h-1.5',
-    md: 'h-2.5',
-    lg: 'h-4',
-  };
-
-  const colorStyles = {
-    emerald: 'bg-emerald-500',
-    blue: 'bg-blue-500',
-    indigo: 'bg-indigo-500',
-    amber: 'bg-amber-500',
-  };
+export const ProgressBar = React.forwardRef<
+  React.ElementRef<typeof ProgressPrimitive.Root>,
+  ProgressBarProps
+>(({ className, value = 0, showPercentage = false, indicatorClassName, ...props }, ref) => {
+  const clampedValue = Math.min(100, Math.max(0, value || 0))
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className="w-full flex flex-col gap-1.5">
       {showPercentage && (
-        <div className="flex justify-between items-center mb-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
-          <span>Progress</span>
-          <span>{Math.round(clampedProgress)}%</span>
+        <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
+          <span>Progres</span>
+          <span>{Math.round(clampedValue)}%</span>
         </div>
       )}
-      <div className={`w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden ${heightStyles[size]}`}>
-        <div
-          className={`${heightStyles[size]} ${colorStyles[color]} rounded-full transition-all duration-500 ease-out`}
-          style={{ width: `${clampedProgress}%` }}
+      <ProgressPrimitive.Root
+        ref={ref}
+        className={cn('relative h-2.5 w-full overflow-hidden rounded-full bg-secondary', className)}
+        value={clampedValue}
+        {...props}
+      >
+        <ProgressPrimitive.Indicator
+          className={cn('h-full w-full flex-1 bg-primary transition-all duration-500 ease-out', indicatorClassName)}
+          style={{ transform: `translateX(-${100 - clampedValue}%)` }}
         />
-      </div>
+      </ProgressPrimitive.Root>
     </div>
-  );
-};
+  )
+})
+
+ProgressBar.displayName = 'ProgressBar'
+export const Progress = ProgressBar

@@ -1,16 +1,10 @@
-import { Navbar } from './Navbar'
+import React from 'react'
+import { AppLayout, AppLayoutProps } from '@/components/templates/AppLayout'
 
-interface PageLayoutProps {
-  children: React.ReactNode
+export interface PageLayoutProps extends AppLayoutProps {}
+
+export const PageLayout: React.FC<PageLayoutProps> = (props) => {
+  return <AppLayout {...props} />
 }
 
-export function PageLayout({ children }: PageLayoutProps) {
-  return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto p-4 md:p-6">
-        {children}
-      </main>
-    </div>
-  )
-}
+export default PageLayout

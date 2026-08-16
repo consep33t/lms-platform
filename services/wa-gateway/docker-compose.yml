@@ -15,9 +15,10 @@ services:
       - PORT=3333
     shm_size: '1gb' # SANGAT PENTING: Mencegah Chromium crash (Aw, Snap!) karena limit default /dev/shm 64MB di Docker
     restart: always # Penting untuk auto-recovery bot
-    # networks:
-    #   - shared-network # Gunakan jika ingin diakses dari container Nginx di network yang sama
+    networks:
+      - lms_network
 
-# networks:
-#   shared-network:
-#     external: true
+networks:
+  lms_network:
+    external: true
+    name: lms_network

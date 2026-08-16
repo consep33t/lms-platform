@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, ConfigDict
 from typing import Optional, Dict, Any, List
 
 class SSOProviderBase(BaseModel):
@@ -18,11 +18,10 @@ class SSOProviderUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class SSOProviderResponse(SSOProviderBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     tenant_id: int
-
-    class Config:
-        from_attributes = True
 
 class SSOLoginInitiateResponse(BaseModel):
     auth_url: HttpUrl

@@ -76,12 +76,33 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const [resStats, resAnalytics] = await Promise.all([
-        api.get('/admin/reports/dashboard'),
-        api.get('/admin/reports/analytics')
-      ])
+      const resStats = await api.get('/admin/reports/dashboard').catch((err) => {
+        console.warn('Dashboard stats fallback:', err)
+        return { data: null }
+      })
+
+      // Fetch analytics with fallback to /overview (to bypass browser adblockers)
+      let analyticsData: AnalyticsData | null = null
+      try {
+        const resAnalytics = await api.get('/admin/reports/overview')
+        analyticsData = resAnalytics.data
+      } catch {
+        try {
+          const resFallback = await api.get('/admin/reports/analytics')
+          analyticsData = resFallback.data
+        } catch (analyticsErr) {
+          console.warn('Analytics report blocked or unavailable, using safe empty metrics:', analyticsErr)
+          analyticsData = {
+            enrollment_trend_7d: [],
+            score_distribution: [],
+            top_modules: [],
+            recent_activities: []
+          }
+        }
+      }
+
       setStats(resStats.data)
-      setAnalytics(resAnalytics.data)
+      setAnalytics(analyticsData)
     } catch (err) {
       console.error('Failed to fetch admin dashboard data', err)
     } finally {

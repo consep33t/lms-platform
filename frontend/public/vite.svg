@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="lmsGrad" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="0.5" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="capGrad" x1="6" y1="8" x2="26" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E0E7FF"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded Background -->
+  <rect width="32" height="32" rx="8" fill="url(#lmsGrad)"/>
+  <!-- Graduation Cap Top -->
+  <path d="M16 7L6 12L16 17L26 12L16 7Z" fill="url(#capGrad)" fill-opacity="0.95"/>
+  <!-- Graduation Cap Underbody -->
+  <path d="M10 14.5V19.5C10 21.5 12.6863 23 16 23C19.3137 23 22 21.5 22 19.5V14.5L16 17.5L10 14.5Z" fill="#FFFFFF" fill-opacity="0.85"/>
+  <!-- Tassel -->
+  <path d="M24 13V19C24 19.5523 23.5523 20 23 20" stroke="#FBBF24" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

@@ -11,7 +11,7 @@ class UserRepository:
     async def get_by_id(self, user_id: int) -> User | None:
         stmt = select(User).where(User.id == user_id, User.is_deleted == False)
         res = await self.db.execute(stmt)
-        return res.scalar_one_or_none()
+        return res.scalars().first()
 
     async def get_by_email(self, email: str) -> User | None:
         clean_email = email.strip().lower()
@@ -24,7 +24,7 @@ class UserRepository:
             User.is_deleted == False
         )
         res = await self.db.execute(stmt)
-        return res.scalar_one_or_none()
+        return res.scalars().first()
 
     async def get_pending_approvals(self) -> list[User]:
         stmt = select(User).where(
@@ -88,7 +88,7 @@ class UserRepository:
             RefreshToken.expires_at > datetime.utcnow()
         )
         res = await self.db.execute(stmt)
-        return res.scalar_one_or_none()
+        return res.scalars().first()
 
     async def revoke_refresh_token(self, token_str: str) -> None:
         stmt = update(RefreshToken).where(RefreshToken.token == token_str).values(is_revoked=True)

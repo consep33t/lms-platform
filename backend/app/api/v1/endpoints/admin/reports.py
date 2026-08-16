@@ -50,6 +50,8 @@ async def get_dashboard_stats(
 
 
 @router.get("/analytics")
+@router.get("/overview")
+@router.get("/metrics")
 async def get_admin_analytics(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)

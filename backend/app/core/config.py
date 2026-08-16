@@ -65,12 +65,30 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
 
+    from pydantic import field_validator
+    from typing import Any
+
     # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "https://lms.consep33t.my.id"
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, (list, set)):
+            return list(v)
+        return ["http://localhost:5173", "https://lms.consep33t.my.id", "http://localhost:3000"]
 
     @property
     def DATABASE_URL(self) -> str:

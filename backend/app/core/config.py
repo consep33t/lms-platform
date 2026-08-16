@@ -89,8 +89,13 @@ class Settings(BaseSettings):
             return [str(i) for i in v]
         return ["http://localhost:5173", "https://lms.consep33t.my.id", "http://localhost:3000"]
 
+    # Database URL
+    DATABASE_URL: Optional[str] = None
+
     @property
-    def DATABASE_URL(self) -> str:
+    def db_url(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
         return (
             f"mssql+aioodbc://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_SERVER}:{self.DB_PORT}/{self.DB_NAME}"

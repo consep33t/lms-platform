@@ -32,7 +32,8 @@ import {
 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
 import api from '@/lib/api'
-
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useConfirm, useAlert, useToast } from '@/context/FeedbackContext'
 
 interface SlideItem {
   id: number
@@ -44,6 +45,11 @@ interface SlideItem {
 }
 
 export default function SessionBuilderPage() {
+  usePageTitle('Session Builder Studio — CMS Admin')
+  const confirm = useConfirm()
+  const alert = useAlert()
+  const { success, error } = useToast()
+
   const { moduleId, sessionId } = useParams<{ moduleId: string; sessionId: string }>()
   const navigate = useNavigate()
 
@@ -140,12 +146,16 @@ export function LiveCounter() {
       const res = await api.post(`/admin/questions/session/${sessionId}/import-csv`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      alert(res.data.message || 'Berhasil mengimpor soal kuis!')
+      success(res.data.message || 'Berhasil mengimpor soal kuis!')
       setShowCsvModal(false)
       setCsvFile(null)
       fetchSessionFlow()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal mengimpor file CSV.')
+      alert({
+        title: 'Gagal Mengimpor CSV',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat mengimpor file CSV.',
+        type: 'error',
+      })
     } finally {
       setImportingCsv(false)
     }
@@ -336,10 +346,14 @@ spec:
         text_body: textBody,
         order: nextOrder
       })
-      alert('Slide teks & kode berhasil ditambahkan!')
+      success('Slide teks & kode berhasil ditambahkan!')
       fetchSessionFlow()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan slide teks.')
+      alert({
+        title: 'Gagal Menyimpan Slide',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan slide teks.',
+        type: 'error',
+      })
     } finally {
       setSavingText(false)
     }
@@ -349,7 +363,11 @@ spec:
   const handleUploadImageSlide = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!imageFile) {
-      alert('Pilih file gambar diagram terlebih dahulu!')
+      alert({
+        title: 'Pilih File Gambar',
+        message: 'Pilih file gambar diagram terlebih dahulu sebelum mengunggah.',
+        type: 'warning',
+      })
       return
     }
 
@@ -371,11 +389,15 @@ spec:
         media_file_id: mediaId,
         order: nextOrder
       })
-      alert('Slide gambar diagram berhasil diunggah & disimpan!')
+      success('Slide gambar diagram berhasil diunggah & disimpan!')
       setImageFile(null)
       fetchSessionFlow()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal mengunggah gambar.')
+      alert({
+        title: 'Gagal Mengunggah Gambar',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat mengunggah file gambar.',
+        type: 'error',
+      })
     } finally {
       setUploadingMedia(false)
     }
@@ -385,7 +407,11 @@ spec:
   const handleUploadVideoSlide = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!videoFile) {
-      alert('Pilih file video MP4 terlebih dahulu!')
+      alert({
+        title: 'Pilih File Video',
+        message: 'Pilih file video MP4 terlebih dahulu sebelum mengunggah.',
+        type: 'warning',
+      })
       return
     }
 
@@ -407,11 +433,15 @@ spec:
         media_file_id: mediaId,
         order: nextOrder
       })
-      alert('Slide video demonstrasi berhasil diunggah & disimpan!')
+      success('Slide video demonstrasi berhasil disimpan!')
       setVideoFile(null)
       fetchSessionFlow()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal mengunggah video.')
+      alert({
+        title: 'Gagal Mengunggah Video',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat mengunggah file video.',
+        type: 'error',
+      })
     } finally {
       setUploadingMedia(false)
     }
@@ -425,7 +455,11 @@ spec:
     let options: any[] = []
     if (questionType === 'multiple_choice' || questionType === 'multi_select') {
       if (!opt1.trim() || !opt2.trim()) {
-        alert('Minimal 2 pilihan wajib diisi')
+        alert({
+          title: 'Pilihan Jawaban Kurang',
+          message: 'Minimal 2 opsi pilihan jawaban wajib diisi.',
+          type: 'warning',
+        })
         return
       }
       options = [
@@ -442,7 +476,11 @@ spec:
         parsedMeta = JSON.parse(metaData)
       }
     } catch (err) {
-      alert('Format meta_data JSON tidak valid.')
+      alert({
+        title: 'Format Metadata Tidak Valid',
+        message: 'Format meta_data JSON tidak valid. Periksa tanda kutip dan kurung kurawal.',
+        type: 'error',
+      })
       return
     }
 
@@ -459,7 +497,7 @@ spec:
         options: options,
         meta_data: parsedMeta
       })
-      alert('Soal kuis checkpoint berhasil ditambahkan ke sesi!')
+      success('Soal kuis checkpoint berhasil ditambahkan ke sesi!')
       setQuizQuestion('')
       setOpt1('')
       setOpt2('')
@@ -469,7 +507,11 @@ spec:
       setMetaData('{}')
       fetchSessionFlow()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan kuis.')
+      alert({
+        title: 'Gagal Menyimpan Kuis',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan soal kuis.',
+        type: 'error',
+      })
     } finally {
       setSavingQuiz(false)
     }
@@ -477,23 +519,39 @@ spec:
 
   // Delete Slide Content
   const handleDeleteContent = async (contentId: number) => {
-    if (!confirm('Hapus slide ini dari sesi?')) return
+    const ok = await confirm({
+      title: 'Hapus Slide Pembelajaran?',
+      message: 'Hapus slide materi ini dari alur sesi belajar?',
+      confirmText: 'Hapus Slide',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/admin/modules/contents/${contentId}`)
+      success('Slide berhasil dihapus.')
       fetchSessionFlow()
     } catch (err) {
-      alert('Gagal menghapus slide.')
+      error('Gagal menghapus slide.')
     }
   }
 
   // Delete Question
   const handleDeleteQuestion = async (questionId: number) => {
-    if (!confirm('Hapus soal kuis ini?')) return
+    const ok = await confirm({
+      title: 'Hapus Soal Kuis?',
+      message: 'Apakah Anda yakin ingin menghapus butir soal kuis ini dari sesi?',
+      confirmText: 'Hapus Soal',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/admin/modules/questions/${questionId}`)
+      success('Soal kuis berhasil dihapus.')
       fetchSessionFlow()
     } catch (err) {
-      alert('Gagal menghapus soal kuis.')
+      error('Gagal menghapus soal kuis.')
     }
   }
 

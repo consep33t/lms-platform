@@ -17,8 +17,10 @@ import {
   Users,
   Code2
 } from 'lucide-react'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function AboutPage() {
+  usePageTitle('Tentang Platform & Arsitektur Enterprise')
   return (
     <PageLayout>
       <div className="max-w-5xl mx-auto space-y-10 pb-16">

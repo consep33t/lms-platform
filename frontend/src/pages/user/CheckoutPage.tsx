@@ -1,101 +1,180 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { ShieldCheck, CreditCard, Sparkles, ArrowLeft, Tag } from 'lucide-react'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 export default function CheckoutPage() {
-  const { moduleId } = useParams();
-  const navigate = useNavigate();
-  const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [paymentGateway, setPaymentGateway] = useState('midtrans');
+  usePageTitle('Checkout Pembelian Modul')
+  const { moduleId } = useParams()
+  const navigate = useNavigate()
+  const { success, info } = useToast()
+
+  const [couponCode, setCouponCode] = useState('')
+  const [discount, setDiscount] = useState(0)
+  const [paymentGateway, setPaymentGateway] = useState('midtrans')
   
-  const basePrice = 500000;
+  const basePrice = 500000
   
   const handleCalculateDiscount = () => {
     if (couponCode.toUpperCase() === 'DISC50') {
-      setDiscount(50000);
-    } else {
-      setDiscount(0);
+      setDiscount(50000)
+      success('Kupon Berhasil Dipasang!', 'Diskon potongan Rp 50.000 telah diaplikasikan.')
+    } else if (couponCode.trim()) {
+      setDiscount(0)
+      info('Kupon Tidak Valid', 'Kode promo tidak ditemukan atau masa berlakunya telah habis.')
     }
-  };
+  }
 
   const handleCheckout = () => {
-    alert(`Processing payment via ${paymentGateway}`);
-    navigate('/orders');
-  };
+    success('Memproses Pembayaran...', `Menghubungkan ke gateway pembayaran ${paymentGateway === 'midtrans' ? 'Midtrans Snap' : 'Stripe Checkout'}.`)
+    setTimeout(() => {
+      navigate('/orders')
+    }, 1200)
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Checkout</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border p-4 rounded shadow-sm bg-white">
-          <h2 className="text-xl font-semibold mb-4">Module Summary</h2>
-          <p className="mb-2"><strong>Module ID:</strong> {moduleId}</p>
-          <p className="mb-2"><strong>Course Name:</strong> Advanced React Patterns</p>
-          <p className="mb-4"><strong>Price:</strong> Rp {basePrice.toLocaleString()}</p>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Coupon Code</label>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                value={couponCode} 
-                onChange={e => setCouponCode(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 flex-grow"
-                placeholder="Enter code"
-              />
-              <button 
-                onClick={handleCalculateDiscount}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-          
-          {discount > 0 && (
-            <p className="text-green-600 mb-2">Discount applied: -Rp {discount.toLocaleString()}</p>
-          )}
-          
-          <div className="border-t pt-4 mt-4">
-            <p className="text-xl font-bold">Total: Rp {(basePrice - discount).toLocaleString()}</p>
-          </div>
+    <PageLayout>
+      <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-page-in">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Kembali ke Katalog
+        </Link>
+
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground">
+            Checkout Pembelian Modul
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Konfirmasi pesanan dan pilih metode pembayaran resmi yang aman.
+          </p>
         </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="rounded-2xl border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold font-display flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" /> Ringkasan Pesanan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="flex justify-between py-2 border-b border-border/60">
+                <span className="text-muted-foreground">ID Modul</span>
+                <span className="font-mono font-medium">{moduleId}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border/60">
+                <span className="text-muted-foreground">Nama Modul</span>
+                <span className="font-semibold text-foreground">Akselerasi Fullstack Enterprise</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border/60">
+                <span className="text-muted-foreground">Harga Normal</span>
+                <span className="font-medium text-foreground">Rp {basePrice.toLocaleString('id-ID')}</span>
+              </div>
+              
+              <div className="pt-2 space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Kode Promo / Voucher
+                </label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="text" 
+                    value={couponCode} 
+                    onChange={e => setCouponCode(e.target.value)}
+                    className="rounded-xl uppercase font-mono"
+                    placeholder="Contoh: DISC50"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={handleCalculateDiscount}
+                    className="rounded-xl shrink-0"
+                  >
+                    Gunakan
+                  </Button>
+                </div>
+              </div>
+              
+              {discount > 0 && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium pt-1">
+                  <span>Potongan Diskon</span>
+                  <span>-Rp {discount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              
+              <div className="border-t border-border pt-4 mt-2 flex justify-between items-center">
+                <span className="font-bold text-base text-foreground">Total Tagihan</span>
+                <span className="text-xl font-extrabold text-primary">
+                  Rp {(basePrice - discount).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="border p-4 rounded shadow-sm bg-white">
-          <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-          
-          <div className="space-y-3 mb-6">
-            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded hover:bg-gray-50">
-              <input 
-                type="radio" 
-                name="gateway" 
-                value="midtrans"
-                checked={paymentGateway === 'midtrans'}
-                onChange={() => setPaymentGateway('midtrans')}
-              />
-              <span>Midtrans (QRIS, GoPay, Bank Transfer)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded hover:bg-gray-50">
-              <input 
-                type="radio" 
-                name="gateway" 
-                value="stripe"
-                checked={paymentGateway === 'stripe'}
-                onChange={() => setPaymentGateway('stripe')}
-              />
-              <span>Stripe (Credit Card)</span>
-            </label>
-          </div>
+          <Card className="rounded-2xl border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold font-display flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" /> Metode Pembayaran
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <label 
+                  onClick={() => setPaymentGateway('midtrans')}
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentGateway === 'midtrans' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'}`}
+                >
+                  <input 
+                    type="radio" 
+                    name="gateway" 
+                    value="midtrans"
+                    checked={paymentGateway === 'midtrans'}
+                    onChange={() => setPaymentGateway('midtrans')}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Midtrans Payment Gateway</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">QRIS, GoPay, OVO, ShopeePay, Virtual Account BCA/Mandiri/BRI</div>
+                  </div>
+                </label>
 
-          <button 
-            onClick={handleCheckout}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded"
-          >
-            Bayar Sekarang
-          </button>
+                <label 
+                  onClick={() => setPaymentGateway('stripe')}
+                  className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${paymentGateway === 'stripe' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'}`}
+                >
+                  <input 
+                    type="radio" 
+                    name="gateway" 
+                    value="stripe"
+                    checked={paymentGateway === 'stripe'}
+                    onChange={() => setPaymentGateway('stripe')}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Stripe Global Checkout</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Kartu Kredit / Debit Visa, Mastercard, AMEX & Apple Pay</div>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span>Transaksi dienkripsi 256-bit SSL dengan perlindungan anti-fraud.</span>
+              </div>
+
+              <Button 
+                type="button"
+                onClick={handleCheckout}
+                className="w-full rounded-xl h-11 text-base font-bold shadow-md active-press mt-2"
+              >
+                Bayar Sekarang
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
-  );
+    </PageLayout>
+  )
 }

@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useAlert } from '@/context/FeedbackContext'
 
 interface ProgressItem {
   module_id: number
@@ -67,6 +69,9 @@ interface ModuleSessionItem {
 }
 
 export default function HistoryPage() {
+  usePageTitle('Riwayat & Progres Belajar')
+  const alert = useAlert()
+
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -122,7 +127,11 @@ export default function HistoryPage() {
       const res = await api.get(`/sessions/${sessionId}/review`)
       setReviewData(res.data)
     } catch (err) {
-      alert('Gagal memuat review kuis sesi ini.')
+      alert({
+        title: 'Review Kuis Tidak Tersedia',
+        message: 'Gagal memuat review kuis sesi ini atau Anda belum menyelesaikan kuis pada sesi ini.',
+        type: 'error',
+      })
       setReviewModalOpen(false)
     } finally {
       setLoadingReview(false)

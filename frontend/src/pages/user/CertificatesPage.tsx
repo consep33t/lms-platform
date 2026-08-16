@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Award, Download, ExternalLink, Calendar, BookOpen, RefreshCw, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 interface CertificateItem {
   id: number
@@ -19,6 +21,8 @@ interface CertificateItem {
 }
 
 export default function CertificatesPage() {
+  usePageTitle('Sertifikat Kelulusan Saya')
+  const { success, error } = useToast()
   const [certificates, setCertificates] = useState<CertificateItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,8 +54,9 @@ export default function CertificatesPage() {
       document.body.appendChild(link)
       link.click()
       link.remove()
+      success('Sertifikat berhasil diunduh!')
     } catch (err) {
-      alert('Gagal mengunduh sertifikat.')
+      error('Gagal mengunduh sertifikat.')
     }
   }
 

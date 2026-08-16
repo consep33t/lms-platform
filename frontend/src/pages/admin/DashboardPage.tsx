@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface DashboardStats {
   total_users: number
@@ -65,6 +66,7 @@ interface AnalyticsData {
 }
 
 export default function AdminDashboardPage() {
+  usePageTitle('Dashboard Analitik — CMS Admin')
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)

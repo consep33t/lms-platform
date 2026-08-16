@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface UserProfile {
   id: number
@@ -34,6 +35,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  usePageTitle('Profil & Pengaturan Akun')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile')

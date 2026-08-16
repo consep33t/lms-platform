@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, BookOpen, Trash2, Edit3, CheckCircle, RefreshCw, Layers, Sparkles, X, PlusCircle, FileText } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useConfirm, useAlert, useToast } from '@/context/FeedbackContext'
 
 interface ModuleItem {
   id: number
@@ -29,6 +31,11 @@ interface SessionItem {
 }
 
 export default function AdminModulesPage() {
+  usePageTitle('Manajemen Modul Pembelajaran — CMS Admin')
+  const confirm = useConfirm()
+  const alert = useAlert()
+  const { success, error } = useToast()
+
   const [modules, setModules] = useState<ModuleItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -120,21 +127,38 @@ export default function AdminModulesPage() {
         })
       }
       setShowModuleModal(false)
+      success(editingModule ? 'Modul berhasil diperbarui!' : 'Modul baru berhasil ditambahkan!')
       fetchModules()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan modul.')
+      alert({
+        title: 'Gagal Menyimpan Modul',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan modul.',
+        type: 'error',
+      })
     } finally {
       setSavingModule(false)
     }
   }
 
   const handleDeleteModule = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus modul ini beserta seluruh sesinya?')) return
+    const ok = await confirm({
+      title: 'Hapus Modul Pembelajaran?',
+      message: 'Apakah Anda yakin ingin menghapus modul ini beserta seluruh sesinya? Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Ya, Hapus Modul',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/admin/modules/${id}`)
+      success('Modul berhasil dihapus.')
       fetchModules()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menghapus modul.')
+      alert({
+        title: 'Gagal Menghapus Modul',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menghapus modul.',
+        type: 'error',
+      })
     }
   }
 
@@ -159,22 +183,39 @@ export default function AdminModulesPage() {
       setNewSessionTitle('')
       setNewSessionDesc('')
       setNewSessionDuration(30)
+      success('Sesi baru berhasil ditambahkan!')
       fetchSessions(activeModuleForSessions.id)
-    } catch (err) {
-      alert('Gagal menambahkan sesi baru.')
+    } catch (err: any) {
+      alert({
+        title: 'Gagal Menambahkan Sesi',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menambahkan sesi baru.',
+        type: 'error',
+      })
     } finally {
       setCreatingSession(false)
     }
   }
 
   const handleDeleteSession = async (sessionId: number) => {
-    if (!confirm('Hapus sesi ini beserta seluruh isi slide dan kuisnya?')) return
+    const ok = await confirm({
+      title: 'Hapus Sesi Pembelajaran?',
+      message: 'Hapus sesi ini beserta seluruh isi slide materi dan soal kuisnya?',
+      confirmText: 'Hapus Sesi',
+      variant: 'destructive',
+    })
+    if (!ok) return
     if (!activeModuleForSessions) return
+
     try {
       await api.delete(`/admin/modules/sessions/${sessionId}`)
+      success('Sesi pembelajaran berhasil dihapus.')
       fetchSessions(activeModuleForSessions.id)
-    } catch (err) {
-      alert('Gagal menghapus sesi.')
+    } catch (err: any) {
+      alert({
+        title: 'Gagal Menghapus Sesi',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menghapus sesi.',
+        type: 'error',
+      })
     }
   }
 

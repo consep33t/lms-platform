@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { KeyRound, Plus, RefreshCw, CheckCircle2, XCircle, Copy, Trash2, Power } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useConfirm, useAlert, useToast } from '@/context/FeedbackContext'
 
 interface AdminTokenItem {
   id: number
@@ -20,6 +22,11 @@ interface AdminTokenItem {
 }
 
 export default function AdminTokensPage() {
+  usePageTitle('Manajemen Token Akses — CMS Admin')
+  const confirm = useConfirm()
+  const alert = useAlert()
+  const { success, error } = useToast()
+
   const [tokens, setTokens] = useState<AdminTokenItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -57,9 +64,14 @@ export default function AdminTokensPage() {
         days_valid: daysValid,
       })
       setShowModal(false)
+      success('Token akses baru berhasil dibuat!')
       fetchTokens()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal membuat token baru.')
+      alert({
+        title: 'Gagal Membuat Token',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat membuat token baru.',
+        type: 'error',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -68,19 +80,28 @@ export default function AdminTokensPage() {
   const handleToggleToken = async (tokenId: number) => {
     try {
       await api.patch(`/admin/tokens/${tokenId}/toggle`)
+      success('Status token berhasil diperbarui.')
       fetchTokens()
     } catch (err) {
-      alert('Gagal mengubah status token.')
+      error('Gagal mengubah status token.')
     }
   }
 
   const handleDeleteToken = async (tokenId: number) => {
-    if (!confirm('Hapus token akses ini secara permanen?')) return
+    const ok = await confirm({
+      title: 'Hapus Token Akses?',
+      message: 'Apakah Anda yakin ingin menghapus token akses ini secara permanen? Peserta tidak akan dapat menggunakan token ini lagi.',
+      confirmText: 'Ya, Hapus Token',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/admin/tokens/${tokenId}`)
+      success('Token akses berhasil dihapus.')
       fetchTokens()
     } catch (err) {
-      alert('Gagal menghapus token.')
+      error('Gagal menghapus token.')
     }
   }
 

@@ -1,104 +1,185 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
+import { PageLayout } from '@/components/layout/PageLayout'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { DollarSign, ShoppingCart, Tag, Plus, CheckCircle2, Clock, XCircle, X } from 'lucide-react'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 const mockOrders = [
-  { id: 'ORD-001', user: 'Alice', moduleName: 'Advanced React Patterns', amount: 450000, status: 'Paid' },
-  { id: 'ORD-002', user: 'Bob', moduleName: 'Node.js Microservices', amount: 300000, status: 'Pending' },
-];
+  { id: 'ORD-001', user: 'Alice Maharani', moduleName: 'Arsitektur Jaringan Enterprise & Microservices', amount: 450000, status: 'Paid' },
+  { id: 'ORD-002', user: 'Bob Pratama', moduleName: 'Fullstack React TypeScript Modern', amount: 300000, status: 'Pending' },
+  { id: 'ORD-003', user: 'Citra Dewi', moduleName: 'DevOps & Kubernetes Orchestration', amount: 500000, status: 'Paid' },
+]
 
 export default function AdminOrdersPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  usePageTitle('Manajemen Transaksi & Pendapatan — CMS Admin')
+  const { success } = useToast()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [couponCode, setCouponCode] = useState('')
+  const [discountAmount, setDiscountAmount] = useState('')
+
+  const handleSaveCoupon = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!couponCode) return
+    success('Kupon Berhasil Dibuat!', `Kode kupon ${couponCode.toUpperCase()} telah aktif.`)
+    setIsModalOpen(false)
+    setCouponCode('')
+    setDiscountAmount('')
+  }
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Orders & Revenue</h1>
-        <button 
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 animate-page-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground">
+            Transaksi & Pendapatan
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pantau arus kas penjualan modul, verifikasi transaksi, dan kelola kupon diskon.
+          </p>
+        </div>
+        <Button 
+          type="button"
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          className="gap-2 rounded-xl shadow-sm active-press"
         >
-          Create Coupon
-        </button>
+          <Plus className="h-4 w-4" /> Buat Kupon Baru
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase">Total Revenue</h3>
-          <p className="text-3xl font-bold mt-2">Rp 12.500.000</p>
-        </div>
-        <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase">Orders Today</h3>
-          <p className="text-3xl font-bold mt-2">24</p>
-        </div>
-        <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
-          <h3 className="text-gray-500 text-sm font-semibold uppercase">Active Coupons</h3>
-          <p className="text-3xl font-bold mt-2">5</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <Card className="p-6 rounded-2xl border-border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20">
+              <DollarSign className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Pendapatan</p>
+              <h3 className="text-2xl font-bold font-display text-foreground mt-0.5">Rp 12.500.000</h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 rounded-2xl border-border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 text-primary rounded-xl border border-primary/20">
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transaksi Hari Ini</p>
+              <h3 className="text-2xl font-bold font-display text-foreground mt-0.5">24 Pesanan</h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 rounded-2xl border-border shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20">
+              <Tag className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kupon Promo Aktif</p>
+              <h3 className="text-2xl font-bold font-display text-foreground mt-0.5">5 Kupon</h3>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      <h2 className="text-xl font-semibold mb-4">Recent Orders</h2>
-      <div className="bg-white border rounded shadow-sm overflow-hidden mb-8">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b">
-              <th className="p-4 font-semibold text-gray-700">Order ID</th>
-              <th className="p-4 font-semibold text-gray-700">User</th>
-              <th className="p-4 font-semibold text-gray-700">Module</th>
-              <th className="p-4 font-semibold text-gray-700">Amount</th>
-              <th className="p-4 font-semibold text-gray-700">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockOrders.map(order => (
-              <tr key={order.id} className="border-b hover:bg-gray-50">
-                <td className="p-4">{order.id}</td>
-                <td className="p-4">{order.user}</td>
-                <td className="p-4">{order.moduleName}</td>
-                <td className="p-4">Rp {order.amount.toLocaleString()}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold
-                    ${order.status === 'Paid' ? 'bg-green-100 text-green-800' : ''}
-                    ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                  `}>
-                    {order.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold font-display text-foreground">Transaksi Terbaru</h2>
+        <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="p-4">ID Order</th>
+                  <th className="p-4">Peserta</th>
+                  <th className="p-4">Modul Pembelajaran</th>
+                  <th className="p-4">Total</th>
+                  <th className="p-4">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {mockOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="p-4 font-mono font-medium text-foreground">{order.id}</td>
+                    <td className="p-4 font-medium text-foreground">{order.user}</td>
+                    <td className="p-4 text-muted-foreground">{order.moduleName}</td>
+                    <td className="p-4 font-bold text-foreground">Rp {order.amount.toLocaleString('id-ID')}</td>
+                    <td className="p-4">
+                      <Badge
+                        variant={order.status === 'Paid' ? 'default' : 'secondary'}
+                        className="rounded-lg text-xs"
+                      >
+                        {order.status === 'Paid' ? (
+                          <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Selesai</span>
+                        ) : (
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-amber-500" /> Pending</span>
+                        )}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Create New Coupon</h2>
-            <div className="space-y-4 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl p-6 space-y-5 animate-scale-in z-10">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <h3 className="text-lg font-bold font-display text-foreground">Buat Kupon Diskon Baru</h3>
+            <form onSubmit={handleSaveCoupon} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Coupon Code</label>
-                <input type="text" className="w-full border rounded px-3 py-2" placeholder="e.g. SUMMER50" />
+                <Label htmlFor="coupon_code" className="text-xs font-semibold text-muted-foreground">Kode Kupon</Label>
+                <Input
+                  id="coupon_code"
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="rounded-xl uppercase font-mono mt-1"
+                  placeholder="Contoh: MERDEKA50"
+                  required
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Discount Amount (Rp)</label>
-                <input type="number" className="w-full border rounded px-3 py-2" placeholder="e.g. 50000" />
+                <Label htmlFor="discount_val" className="text-xs font-semibold text-muted-foreground">Nominal Diskon (Rp)</Label>
+                <Input
+                  id="discount_val"
+                  type="number"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(e.target.value)}
+                  className="rounded-xl font-mono mt-1"
+                  placeholder="Contoh: 50000"
+                  required
+                />
               </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Save Coupon
-              </button>
-            </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="rounded-xl">
+                  Batal
+                </Button>
+                <Button type="submit" className="rounded-xl font-semibold shadow-sm">
+                  Simpan Kupon
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

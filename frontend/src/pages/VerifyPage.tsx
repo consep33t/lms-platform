@@ -17,6 +17,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface VerifyResult {
   is_valid: boolean
@@ -29,6 +30,7 @@ interface VerifyResult {
 }
 
 export default function VerifyPage() {
+  usePageTitle('Verifikasi Keaslian Sertifikat Digital')
   const { code: routeCode } = useParams<{ code?: string }>()
   const [searchCode, setSearchCode] = useState(routeCode || '')
   const [result, setResult] = useState<VerifyResult | null>(null)

@@ -2,6 +2,7 @@ import React from 'react'
 import { AppNavbar } from '@/components/organisms/AppNavbar'
 import { Sidebar } from '@/components/layout/Sidebar'
 import OfflineIndicator from '@/components/pwa/OfflineIndicator'
+import { PageTransition } from '@/components/common/PageTransition'
 import { cn } from '@/lib/utils'
 
 export interface AdminLayoutProps {
@@ -14,7 +15,7 @@ export interface AdminLayoutProps {
 
 /**
  * Template AdminLayout Component
- * Standard layout wrapper for CMS Administration pages with sidebar navigation.
+ * Standard layout wrapper for CMS Administration pages with sidebar navigation and page transitions.
  */
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
@@ -24,21 +25,23 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   className = '',
 }) => {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-200">
       <AppNavbar />
       <div className="flex-1 flex w-full">
         <Sidebar />
-        <main className={cn('flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full', className)}>
+        <main className={cn('flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full custom-scrollbar', className)}>
           {(title || action) && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-4 border-b border-border">
               <div>
-                {title && <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>}
+                {title && <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-foreground">{title}</h1>}
                 {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
               </div>
               {action && <div className="flex items-center gap-2">{action}</div>}
             </div>
           )}
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
       <OfflineIndicator />

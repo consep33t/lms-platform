@@ -30,6 +30,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ActiveLearnerPresence } from '@/components/realtime/ActiveLearnerPresence'
 import { AITutorChatDrawer } from '@/components/ai/AITutorChatDrawer'
 import { AIQuestionExplanationModal } from '@/components/quiz/AIQuestionExplanationModal'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 function BadgeCelebrationModal({ score, onClose }: { score: number, onClose: () => void }) {
   return (
@@ -141,6 +142,7 @@ export default function SessionPage() {
   const navigate = useNavigate()
 
   const [session, setSession] = useState<SessionDetailData | null>(null)
+  usePageTitle(session?.title ? `${session.title}` : 'Sesi Belajar Interaktif')
   const [loading, setLoading] = useState(true)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 

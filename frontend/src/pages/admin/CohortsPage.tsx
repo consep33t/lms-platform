@@ -23,6 +23,8 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useConfirm } from '@/context/FeedbackContext'
 
 interface CohortItem {
   id: number
@@ -66,6 +68,8 @@ interface SimpleModule {
 }
 
 export default function AdminCohortsPage() {
+  usePageTitle('Manajemen Grup & Cohort — CMS Admin')
+  const confirm = useConfirm()
   const [cohorts, setCohorts] = useState<CohortItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -159,7 +163,13 @@ export default function AdminCohortsPage() {
   }
 
   const handleDeleteCohort = async (id: number, cname: string) => {
-    if (!confirm(`Yakin ingin menghapus cohort "${cname}"?`)) return
+    const ok = await confirm({
+      title: 'Hapus Grup Cohort?',
+      message: `Apakah Anda yakin ingin menghapus cohort "${cname}"? Data penugasan dan relasi peserta pada cohort ini akan dibersihkan.`,
+      confirmText: 'Ya, Hapus Cohort',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/admin/cohorts/${id}`)
@@ -214,7 +224,13 @@ export default function AdminCohortsPage() {
 
   const handleRemoveMember = async (userId: number, memberName: string) => {
     if (!activeCohortForMembers) return
-    if (!confirm(`Hapus ${memberName} dari cohort ini?`)) return
+    const ok = await confirm({
+      title: 'Hapus Anggota Cohort?',
+      message: `Keluarkan ${memberName} dari grup cohort ini?`,
+      confirmText: 'Keluarkan Peserta',
+      variant: 'destructive',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/admin/cohorts/${activeCohortForMembers.id}/members/${userId}`)
@@ -273,7 +289,13 @@ export default function AdminCohortsPage() {
 
   const handleRemoveAssignment = async (assignmentId: number) => {
     if (!activeCohortForAssignments) return
-    if (!confirm('Batalkan penugasan modul ini?')) return
+    const ok = await confirm({
+      title: 'Batalkan Penugasan Modul?',
+      message: 'Apakah Anda yakin ingin membatalkan penugasan modul ini untuk seluruh anggota cohort?',
+      confirmText: 'Batalkan Penugasan',
+      variant: 'warning',
+    })
+    if (!ok) return
 
     try {
       await api.delete(`/admin/cohorts/${activeCohortForAssignments.id}/assignments/${assignmentId}`)

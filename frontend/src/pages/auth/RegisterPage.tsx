@@ -20,9 +20,13 @@ import {
   Globe
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 export default function RegisterPage() {
+  usePageTitle('Pendaftaran Akun Peserta Baru')
   const navigate = useNavigate()
+  const { success } = useToast()
 
   const [regMode, setRegMode] = useState<'manual' | 'google'>('manual')
   const [fullName, setFullName] = useState('')
@@ -48,7 +52,6 @@ export default function RegisterPage() {
     const clean = fullName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
     const parts = clean.split(/\s+/).filter(Boolean)
     if (parts.length === 0) return 'peserta@student.lms.alfanet.id'
-    if (parts.length === 1) return `${parts[0]}842@student.lms.alfanet.id`
     return `${parts[0]}.${parts[parts.length - 1]}842@student.lms.alfanet.id`
   }
 
@@ -104,7 +107,7 @@ export default function RegisterPage() {
       })
 
       if (res.data.status === 'approved') {
-        alert('Akun Google Anda telah terverifikasi dan aktif. Mengarahkan ke dashboard...')
+        success('Akun Google Terverifikasi!', 'Akun Anda telah aktif. Mengarahkan ke halaman login...')
         navigate('/login')
       } else {
         setRegisteredData({

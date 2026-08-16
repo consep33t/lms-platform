@@ -7,8 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Megaphone, Send, Mail, Users, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 export default function AdminAnnouncementsPage() {
+  usePageTitle('Pusat Pengumuman & Siaran — CMS Admin')
+  const { success, error } = useToast()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [sendEmail, setSendEmail] = useState(false)
@@ -33,11 +37,14 @@ export default function AdminAnnouncementsPage() {
         target_role: targetRole || null,
       })
 
+      success('Pengumuman Disiarkan!', 'Pesan pengumuman telah dikirimkan ke target peserta.')
       setSuccessMessage(res.data.message || 'Pengumuman berhasil disiarkan ke seluruh peserta!')
       setTitle('')
       setBody('')
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.detail || 'Gagal menyiarkan pengumuman.')
+      const errDetail = err.response?.data?.detail || 'Gagal menyiarkan pengumuman.'
+      error(errDetail)
+      setErrorMessage(errDetail)
     } finally {
       setLoading(false)
     }

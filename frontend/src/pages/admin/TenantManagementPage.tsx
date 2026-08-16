@@ -3,8 +3,12 @@ import { useTenant, TenantBrand } from '@/context/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { useToast } from '@/context/FeedbackContext';
 
 export default function TenantManagementPage() {
+  usePageTitle('Manajemen Multi-Tenancy & Branding — CMS Admin');
+  const { success } = useToast();
   const { brand, setBrand } = useTenant();
   const [formData, setFormData] = useState<TenantBrand>({
     name: 'LMS Platform',
@@ -26,7 +30,7 @@ export default function TenantManagementPage() {
   const handleSave = () => {
     setBrand(formData);
     localStorage.setItem('tenant_brand', JSON.stringify(formData));
-    alert('Tenant branding updated successfully!');
+    success('Branding Tenant Berhasil Diperbarui!', 'Pengaturan warna, logo, dan identitas tenant telah disimpan.');
   };
 
   return (

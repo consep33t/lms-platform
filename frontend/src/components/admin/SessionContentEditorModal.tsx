@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Plus, Terminal, Code2, Sparkles, Video, HelpCircle, FileText, Trash2, CheckCircle2 } from 'lucide-react'
 import api from '@/lib/api'
+import { useToast, useAlert } from '@/context/FeedbackContext'
 
 interface SessionContentEditorModalProps {
   sessionId: number
@@ -14,6 +15,8 @@ interface SessionContentEditorModalProps {
 }
 
 export function SessionContentEditorModal({ sessionId, sessionTitle, onClose }: SessionContentEditorModalProps) {
+  const { success } = useToast()
+  const alert = useAlert()
   const [activeTab, setActiveTab] = useState<'text' | 'image' | 'video' | 'quiz'>('text')
   const [textBody, setTextBody] = useState('')
   const [mediaFileId, setMediaFileId] = useState<number | ''>('')
@@ -95,11 +98,15 @@ def execute_task(payload: dict) -> bool:
       await api.post(`/admin/modules/sessions/${sessionId}/contents?content_type=text&order=${slideOrder}`, {
         text_body: textBody
       })
-      alert('Slide teks berhasil ditambahkan!')
+      success('Slide teks berhasil ditambahkan!')
       setTextBody('')
       setSlideOrder((prev) => prev + 1)
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan slide teks.')
+      alert({
+        title: 'Gagal Menyimpan Slide',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan slide teks.',
+        type: 'error',
+      })
     } finally {
       setSavingContent(false)
     }
@@ -112,11 +119,15 @@ def execute_task(payload: dict) -> bool:
     try {
       setSavingContent(true)
       await api.post(`/admin/modules/sessions/${sessionId}/contents?content_type=${type}&media_file_id=${mediaFileId}&order=${slideOrder}`)
-      alert(`Slide ${type === 'image' ? 'gambar' : 'video'} berhasil ditambahkan!`)
+      success(`Slide ${type === 'image' ? 'gambar' : 'video'} berhasil ditambahkan!`)
       setMediaFileId('')
       setSlideOrder((prev) => prev + 1)
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan slide media.')
+      alert({
+        title: 'Gagal Menyimpan Media',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan slide media.',
+        type: 'error',
+      })
     } finally {
       setSavingContent(false)
     }
@@ -143,7 +154,7 @@ def execute_task(payload: dict) -> bool:
         is_reusable: false,
         options: options
       })
-      alert('Soal kuis checkpoint berhasil ditambahkan!')
+      success('Soal kuis checkpoint berhasil ditambahkan!')
       setQuestionText('')
       setOpt1('')
       setOpt2('')
@@ -152,7 +163,11 @@ def execute_task(payload: dict) -> bool:
       setCorrectOptIdx(1)
       setSlideOrder((prev) => prev + 1)
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyimpan kuis.')
+      alert({
+        title: 'Gagal Menyimpan Kuis',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyimpan soal kuis.',
+        type: 'error',
+      })
     } finally {
       setSavingQuiz(false)
     }

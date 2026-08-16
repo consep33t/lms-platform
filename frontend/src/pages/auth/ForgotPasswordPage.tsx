@@ -5,8 +5,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/atoms/Input'
 import { Button } from '@/components/atoms/Button'
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function ForgotPasswordPage() {
+  usePageTitle('Lupa Kata Sandi — Pemulihan Akun')
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)

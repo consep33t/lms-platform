@@ -21,8 +21,10 @@ import {
   ChevronRight,
   BookOpen
 } from 'lucide-react'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function LandingPage() {
+  usePageTitle('Platform Pembelajaran Interaktif & Sertifikasi Kompetensi')
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-primary selection:text-white">
       {/* PUBLIC NAVBAR */}

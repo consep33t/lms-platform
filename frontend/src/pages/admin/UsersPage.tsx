@@ -24,6 +24,8 @@ import {
   AlertCircle
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useConfirm, useAlert, useToast } from '@/context/FeedbackContext'
 
 interface AdminUserItem {
   id: number
@@ -43,6 +45,11 @@ interface AdminUserItem {
 }
 
 export default function AdminUsersPage() {
+  usePageTitle('Manajemen Pengguna & Peserta — CMS Admin')
+  const confirm = useConfirm()
+  const alert = useAlert()
+  const { success, error } = useToast()
+
   const [users, setUsers] = useState<AdminUserItem[]>([])
   const [pendingApprovals, setPendingApprovals] = useState<AdminUserItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -88,10 +95,14 @@ export default function AdminUsersPage() {
   const handleApprove = async (userId: number) => {
     try {
       await api.post(`/admin/users/${userId}/approve`)
-      alert('Pendaftaran peserta berhasil disetujui! Akun sekarang aktif dan dapat login.')
+      success('Pendaftaran disetujui!', 'Akun peserta sekarang aktif dan dapat login ke platform.')
       fetchAllUserData()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menyetujui pendaftaran.')
+      alert({
+        title: 'Gagal Menyetujui Pendaftaran',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menyetujui akun peserta.',
+        type: 'error',
+      })
     }
   }
 
@@ -104,11 +115,15 @@ export default function AdminUsersPage() {
       await api.post(`/admin/users/${rejectUserId}/reject`, {
         rejection_reason: rejectReason
       })
-      alert('Pendaftaran peserta telah ditolak.')
+      success('Pendaftaran peserta telah ditolak.')
       setRejectUserId(null)
       fetchAllUserData()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menolak pendaftaran.')
+      alert({
+        title: 'Gagal Menolak Pendaftaran',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menolak pendaftaran.',
+        type: 'error',
+      })
     } finally {
       setRejecting(false)
     }
@@ -131,9 +146,13 @@ export default function AdminUsersPage() {
       setPassword('')
       setShowCreateModal(false)
       fetchAllUserData()
-      alert('Pengguna baru berhasil ditambahkan!')
+      success('Pengguna baru berhasil ditambahkan!')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menambahkan user baru.')
+      alert({
+        title: 'Gagal Menambahkan Pengguna',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menambahkan user baru.',
+        type: 'error',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -142,19 +161,32 @@ export default function AdminUsersPage() {
   const handleToggleStatus = async (userId: number) => {
     try {
       await api.patch(`/admin/users/${userId}/toggle-status`)
+      success('Status pengguna berhasil diubah.')
       fetchAllUserData()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal mengubah status user.')
+      error('Gagal mengubah status pengguna.')
     }
   }
 
   const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Hapus akun user ini dari sistem?')) return
+    const ok = await confirm({
+      title: 'Hapus Akun Pengguna?',
+      message: 'Apakah Anda yakin ingin menghapus akun user ini dari sistem? Semua progres belajar dan riwayat kuis user ini akan dibersihkan.',
+      confirmText: 'Ya, Hapus Pengguna',
+      variant: 'destructive',
+    })
+    if (!ok) return
+
     try {
       await api.delete(`/admin/users/${userId}`)
+      success('Akun pengguna berhasil dihapus.')
       fetchAllUserData()
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Gagal menghapus user.')
+      alert({
+        title: 'Gagal Menghapus Pengguna',
+        message: err.response?.data?.detail || 'Terjadi kesalahan saat menghapus pengguna.',
+        type: 'error',
+      })
     }
   }
 

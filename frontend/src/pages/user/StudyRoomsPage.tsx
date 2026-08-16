@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Users, Search, Plus, Hash } from 'lucide-react';
 import { LiveStudyRoomModal } from '@/components/study/LiveStudyRoomModal';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 export default function StudyRoomsPage() {
+  usePageTitle('Ruang Belajar Live & Diskusi');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRoom, setActiveRoom] = useState<{id: string, name: string} | null>(null);
 

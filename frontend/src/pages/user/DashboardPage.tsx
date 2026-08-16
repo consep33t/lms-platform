@@ -23,6 +23,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface ModuleItem {
   id: number
@@ -74,6 +75,7 @@ interface DashboardSummary {
 }
 
 export default function DashboardPage() {
+  usePageTitle('Dashboard Belajar & Modul')
   const [modules, setModules] = useState<ModuleItem[]>([])
   const [userProgressMap, setUserProgressMap] = useState<Record<number, UserProgressItem>>({})
   const [summary, setSummary] = useState<DashboardSummary | null>(null)

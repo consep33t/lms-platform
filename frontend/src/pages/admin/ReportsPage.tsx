@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BarChart3, RefreshCw, BookOpen, CheckCircle, Users, Download, FileSpreadsheet } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useToast } from '@/context/FeedbackContext'
 
 interface CompletionReportItem {
   module_id: number
@@ -15,6 +17,8 @@ interface CompletionReportItem {
 }
 
 export default function AdminReportsPage() {
+  usePageTitle('Laporan & Analitik — CMS Admin')
+  const { success, error } = useToast()
   const [reports, setReports] = useState<CompletionReportItem[]>([])
   const [loading, setLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
@@ -48,8 +52,9 @@ export default function AdminReportsPage() {
       document.body.appendChild(link)
       link.click()
       link.remove()
+      success('Laporan CSV berhasil diunduh!')
     } catch (err) {
-      alert('Gagal mengunduh laporan CSV.')
+      error('Gagal mengunduh laporan CSV.')
     } finally {
       setIsExporting(false)
     }

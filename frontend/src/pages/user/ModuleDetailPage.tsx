@@ -21,6 +21,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface SessionItem {
   id: number
@@ -44,6 +45,7 @@ interface ModuleDetail {
   id: number
   title: string
   description: string
+  status: string
   passing_score: number
   order: number
   thumbnail_media_id: number | null
@@ -67,6 +69,7 @@ export default function ModuleDetailPage() {
   const navigate = useNavigate()
 
   const [moduleData, setModuleData] = useState<ModuleDetail | null>(null)
+  usePageTitle(moduleData?.title || 'Rincian Modul Pembelajaran')
   const [userStatus, setUserStatus] = useState<ModuleUserStatus | null>(null)
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(true)

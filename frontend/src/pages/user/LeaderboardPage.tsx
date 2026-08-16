@@ -16,6 +16,7 @@ import {
   Building2
 } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface LeaderboardItem {
   rank: number
@@ -33,6 +34,7 @@ interface ModuleOption {
 }
 
 export default function LeaderboardPage() {
+  usePageTitle('Peringkat & Leaderboard Belajar')
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([])
   const [modules, setModules] = useState<ModuleOption[]>([])
   const [selectedModuleId, setSelectedModuleId] = useState<string>('global')

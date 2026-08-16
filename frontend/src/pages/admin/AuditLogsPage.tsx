@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ShieldCheck, Search, RefreshCw, Clock, Globe, Activity } from 'lucide-react'
 import api from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface AuditLogItem {
   id: number
@@ -20,6 +21,7 @@ interface AuditLogItem {
 }
 
 export default function AdminAuditLogsPage() {
+  usePageTitle('Audit Trail & Log Keamanan — CMS Admin')
   const [logs, setLogs] = useState<AuditLogItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')

@@ -80,3 +80,11 @@ htmlcov/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Agentic & Local Progress Tracking (Excluded from Repo)
+CHANGELOG.md
+PROGRESS.md
+AGENT.md
+walkthrough.md
+*.plan.md
+

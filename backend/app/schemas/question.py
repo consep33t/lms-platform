@@ -31,6 +31,8 @@ class QuestionBase(BaseModel):
     points: int = 1
     order: int = 0
     is_reusable: bool = False
+    question_type: str = 'multiple_choice'
+    meta_data: dict = {}
 
 
 class QuestionCreate(QuestionBase):
@@ -44,6 +46,8 @@ class QuestionUpdate(BaseModel):
     points: int | None = None
     order: int | None = None
     is_reusable: bool | None = None
+    question_type: str | None = None
+    meta_data: dict | None = None
 
 
 class QuestionResponse(QuestionBase):

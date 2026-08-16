@@ -4,7 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { BarChart3, RefreshCw, BookOpen, CheckCircle, Users } from 'lucide-react'
+import { BarChart3, RefreshCw, BookOpen, CheckCircle, Users, Download, FileSpreadsheet } from 'lucide-react'
 import api from '@/lib/api'
 
 interface CompletionReportItem {
@@ -17,6 +17,7 @@ interface CompletionReportItem {
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<CompletionReportItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     fetchReports()
@@ -34,21 +35,62 @@ export default function AdminReportsPage() {
     }
   }
 
+  const handleExport = async (type: 'modules' | 'users') => {
+    try {
+      setIsExporting(true)
+      const endpoint = type === 'modules' ? '/admin/reports/export/module-completion' : '/admin/reports/export/users'
+      const filename = type === 'modules' ? 'Laporan_Kelulusan_Modul.csv' : 'Laporan_Pengguna_LMS.csv'
+      const res = await api.get(endpoint, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err) {
+      alert('Gagal mengunduh laporan CSV.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="flex-1 flex">
         <Sidebar />
         <main className="flex-1 p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Laporan & Analitik Kelulusan Modul</h1>
               <p className="text-muted-foreground text-sm">Tinjau rasio peserta yang mendaftar dan berhasil lulus per modul pembelajaran.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchReports} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('modules')}
+                disabled={isExporting}
+                className="gap-1.5"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> Export Modul (.CSV)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport('users')}
+                disabled={isExporting}
+                className="gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5 text-primary" /> Export User (.CSV)
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchReports} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" /> Refresh
+              </Button>
+            </div>
           </div>
+
 
           <Card className="border-border/80 shadow-sm overflow-hidden">
             <CardHeader className="bg-muted/20 border-b">

@@ -2,7 +2,7 @@ name: LMS CI/CD Quality Gate & Verification
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, development, beta, production ]
   pull_request:
     branches: [ main, master ]
 
@@ -38,6 +38,7 @@ jobs:
         env:
           SECRET_KEY: "ci-cd-test-secret-key-do-not-use-in-prod"
           ALGORITHM: "HS256"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
           DB_SERVER: "localhost"
           DB_USER: "sa"
           DB_PASSWORD: "secret_ci_password"
@@ -71,3 +72,97 @@ jobs:
       - name: Verify Production Vite Bundle Build
         run: |
           npm run build
+
+  notify-discord:
+    name: 📢 Discord CI/CD Notification
+    needs: [backend-validation, frontend-validation]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository for Metadata
+        uses: actions/checkout@v4
+
+      - name: Send Notification to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL || secrets.DISCORD_WEBHOOK }}
+          BACKEND_STATUS: ${{ needs.backend-validation.result }}
+          FRONTEND_STATUS: ${{ needs.frontend-validation.result }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "⚠️ [WARNING] Secret 'DISCORD_WEBHOOK_URL' atau 'DISCORD_WEBHOOK' belum dikonfigurasi di GitHub Repository Secrets."
+            echo "ℹ️ Untuk mengaktifkan notifikasi Discord:"
+            echo "   1. Buka Repository Settings -> Secrets and variables -> Actions"
+            echo "   2. Klik 'New repository secret'"
+            echo "   3. Beri nama 'DISCORD_WEBHOOK_URL' dan isi dengan URL Webhook channel Discord Anda."
+            exit 0
+          fi
+
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Ambil baris pertama commit message
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+
+          if [ "$BACKEND_STATUS" = "success" ] && [ "$FRONTEND_STATUS" = "success" ]; then
+            TITLE="✅ LMS CI/CD Quality Gate: PASSED"
+            COLOR=3066993 # Hex 0x2ecc71 (Green)
+            DESC="🎉 **Build & Pengujian Lulus!** Seluruh test backend dan build frontend berhasil tanpa error."
+          elif [ "$BACKEND_STATUS" = "cancelled" ] || [ "$FRONTEND_STATUS" = "cancelled" ]; then
+            TITLE="⚠️ LMS CI/CD Quality Gate: CANCELLED"
+            COLOR=16753920 # Hex 0xffa500 (Orange)
+            DESC="⚠️ Pipeline dibatalkan sebelum selesai diproses."
+          else
+            TITLE="❌ LMS CI/CD Quality Gate: FAILED"
+            COLOR=15158332 # Hex 0xe74c3c (Red)
+            DESC="🚨 **Build atau Pengujian Gagal!** Terjadi kesalahan pada pipeline. Periksa log detail di GitHub Actions."
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg desc "$DESC" \
+            --arg repo "${{ github.repository }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg sha "$SHORT_SHA" \
+            --arg msg "$COMMIT_MSG" \
+            --arg b_status "$BACKEND_STATUS" \
+            --arg f_status "$FRONTEND_STATUS" \
+            --arg time "$ISO_TIME" \
+            --argjson color "$COLOR" \
+            '{
+              username: "LMS GitHub Actions CI",
+              avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              embeds: [{
+                author: {
+                  name: $actor,
+                  icon_url: ("https://github.com/" + $actor + ".png")
+                },
+                title: $title,
+                url: ("https://github.com/" + $repo + "/actions/runs/" + $run_id),
+                description: ($desc + "\n\n**Commit:** [`" + $sha + "`](https://github.com/" + $repo + "/commit/" + $sha + ")\n**Pesan:** " + $msg),
+                color: $color,
+                fields: [
+                  { name: "🌿 Branch", value: ("`" + $branch + "`"), inline: true },
+                  { name: "👤 Triggered By", value: ("@" + $actor), inline: true },
+                  { name: "🔗 Actions Run", value: ("[Lihat Log Run #" + $run_id + "](https://github.com/" + $repo + "/actions/runs/" + $run_id + ")"), inline: true },
+                  { name: "🐍 Backend (Pytest)", value: (if $b_status == "success" then "✅ Passed" elif $b_status == "skipped" then "⚪ Skipped" else "❌ Failed" end), inline: true },
+                  { name: "⚛️ Frontend (Vite Build)", value: (if $f_status == "success" then "✅ Passed" elif $f_status == "skipped" then "⚪ Skipped" else "❌ Failed" end), inline: true }
+                ],
+                footer: {
+                  text: "LMS Platform Enterprise CI/CD",
+                  icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                },
+                timestamp: $time
+              }]
+            }')
+
+          echo "Mengirim payload notifikasi ke Discord Webhook..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK")
+          echo "Discord API Response Code: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Notifikasi Discord berhasil terkirim!"
+          else
+            echo "❌ Gagal mengirim notifikasi ke Discord. HTTP Status: $HTTP_CODE"
+          fi

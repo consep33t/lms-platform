@@ -121,7 +121,17 @@ async def refresh(request: Request, response: Response, db: AsyncSession = Depen
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token provided")
     
     service = AuthService(db)
-    new_access_token = await service.refresh_access_token(refresh_token)
+    new_access_token, new_refresh_token = await service.refresh_access_token(refresh_token)
+
+    # Set rotated httpOnly cookie for new refresh token
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=_COOKIE_SECURE,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60,
+    )
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 
@@ -152,7 +162,12 @@ async def logout(
             if remaining > 0:
                 await cache_set(f"jti_blacklist:{jti}", "1", ttl=remaining)
 
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=_COOKIE_SECURE,
+        samesite="lax",
+    )
     return {"message": "Logout berhasil"}
 
 

@@ -138,20 +138,23 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [removeToast]
   )
 
+  const contextValue = React.useMemo<FeedbackContextValue>(
+    () => ({
+      confirm,
+      alert,
+      toast,
+      toasts,
+      removeToast,
+      confirmState,
+      alertState,
+      closeConfirm,
+      closeAlert,
+    }),
+    [confirm, alert, toast, toasts, removeToast, confirmState, alertState, closeConfirm, closeAlert]
+  )
+
   return (
-    <FeedbackContext.Provider
-      value={{
-        confirm,
-        alert,
-        toast,
-        toasts,
-        removeToast,
-        confirmState,
-        alertState,
-        closeConfirm,
-        closeAlert,
-      }}
-    >
+    <FeedbackContext.Provider value={contextValue}>
       {children}
     </FeedbackContext.Provider>
   )

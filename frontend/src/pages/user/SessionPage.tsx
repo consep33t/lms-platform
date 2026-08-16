@@ -218,7 +218,7 @@ export default function SessionPage() {
 
   // Countdown Timer Interval
   useEffect(() => {
-    if (loading || isFinished || isTimedOut || secondsLeft <= 0) return
+    if (loading || isFinished || isTimedOut) return
 
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -232,7 +232,7 @@ export default function SessionPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [loading, isFinished, isTimedOut, secondsLeft])
+  }, [loading, isFinished, isTimedOut])
 
   const handleTimeExpired = async () => {
     if (isFinished || isTimedOut) return

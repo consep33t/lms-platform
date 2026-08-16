@@ -75,6 +75,7 @@ async def stream_media_by_id(
     media_id: int,
     request: Request,
     range: str | None = Header(None),
+    current_user_id: int = Depends(get_current_user_id),
     storage: StorageBackend = Depends(get_storage),
     db: AsyncSession = Depends(get_db),
 ):

@@ -60,24 +60,24 @@ class ModuleService:
         total_score = 0.0
         scored_sessions_count = 0
 
-        for s in sessions:
-            is_comp = False
-            sess_score = None
+        if ump:
+            stmt_sp = select(SessionProgress).where(
+                SessionProgress.user_module_progress_id == ump.id
+            )
+            sp_records = list((await self.db.execute(stmt_sp)).scalars().all())
+            sp_map = {sp.session_id: sp for sp in sp_records}
+        else:
+            sp_map = {}
 
-            if ump:
-                stmt_sp = select(SessionProgress).where(
-                    SessionProgress.user_module_progress_id == ump.id,
-                    SessionProgress.session_id == s.id
-                )
-                sp = (await self.db.execute(stmt_sp)).scalar_one_or_none()
-                if sp:
-                    is_comp = (sp.status == ProgressStatus.completed)
-                    sess_score = sp.score
-                    if is_comp:
-                        completed_sessions_count += 1
-                    if sp.score is not None:
-                        total_score += sp.score
-                        scored_sessions_count += 1
+        for s in sessions:
+            sp = sp_map.get(s.id)
+            is_comp = (sp.status == ProgressStatus.completed) if sp else False
+            sess_score = sp.score if sp else None
+            if is_comp:
+                completed_sessions_count += 1
+            if sess_score is not None:
+                total_score += sess_score
+                scored_sessions_count += 1
 
             session_statuses.append(SessionProgressStatus(
                 session_id=s.id,

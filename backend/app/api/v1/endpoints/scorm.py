@@ -10,12 +10,17 @@ from app.schemas.scorm import (
     XAPIStatementResponse
 )
 from app.services.scorm_service import ScormService
+from app.core.dependencies import require_admin
+from app.models.user import User
 
 router = APIRouter()
 scorm_service = ScormService()
 
 @router.post("/upload")
-async def upload_scorm_package(file: UploadFile = File(...)):
+async def upload_scorm_package(
+    file: UploadFile = File(...),
+    admin: User = Depends(require_admin)
+):
     return {"status": "uploaded", "filename": file.filename}
 
 @router.get("/packages/{id}", response_model=ScormPackageResponse)

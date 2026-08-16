@@ -35,6 +35,7 @@ class SessionService:
         stmt = (
             select(ModuleSession)
             .options(
+                selectinload(ModuleSession.module),
                 selectinload(ModuleSession.contents),
                 selectinload(ModuleSession.questions).selectinload(Question.options)
             )

@@ -12,11 +12,18 @@ import OfflineIndicator from './components/pwa/OfflineIndicator'
 export default function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      const registerSW = () => {
         navigator.serviceWorker.register('/sw.js').catch((error) => {
           console.error('ServiceWorker registration failed: ', error)
         })
-      })
+      }
+
+      if (document.readyState === 'complete') {
+        registerSW()
+      } else {
+        window.addEventListener('load', registerSW)
+        return () => window.removeEventListener('load', registerSW)
+      }
     }
   }, [])
 

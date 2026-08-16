@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.cache import get_redis, close_redis
 from app.api.v1.router import api_router
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.tenant_middleware import TenantMiddleware
 from app.core.rate_limiter import RateLimitExceeded as CustomRateLimitExceeded
 
 
@@ -85,6 +86,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(TenantMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

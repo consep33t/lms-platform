@@ -175,7 +175,7 @@ class AuthService:
         await self.repo.save_refresh_token(rt_record)
         return user, access_token, refresh_token
 
-    async def refresh_access_token(self, refresh_token_str: str) -> str:
+    async def refresh_access_token(self, refresh_token_str: str) -> tuple[str, str]:
         token_record = await self.repo.get_refresh_token(refresh_token_str)
         if not token_record:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token tidak valid atau telah kadaluarsa")
@@ -185,4 +185,16 @@ class AuthService:
         if not user_id or payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token payload tidak valid")
 
-        return create_access_token(user_id)
+        # Invalidate the old refresh token (Refresh Token Rotation)
+        await self.repo.revoke_refresh_token(refresh_token_str)
+
+        # Issue new token pair
+        new_access_token = create_access_token(user_id)
+        new_refresh_token = create_refresh_token(user_id)
+        new_rt_record = RefreshToken(
+            user_id=int(user_id),
+            token=new_refresh_token,
+            expires_at=datetime.utcnow() + timedelta(days=7)
+        )
+        await self.repo.save_refresh_token(new_rt_record)
+        return new_access_token, new_refresh_token

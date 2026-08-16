@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -24,6 +24,9 @@ class Cohort(Base):
 
 class CohortMember(Base):
     __tablename__ = "cohort_members"
+    __table_args__ = (
+        UniqueConstraint("cohort_id", "user_id", name="uq_cohort_member_cohort_user"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     cohort_id: Mapped[int] = mapped_column(Integer, ForeignKey("cohorts.id", ondelete="CASCADE"), index=True, nullable=False)
@@ -39,12 +42,11 @@ class ModuleAssignment(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), index=True, nullable=False)
-    cohort_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=True)
-    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    cohort_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    assigned_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
+    assigned_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     cohort: Mapped["Cohort | None"] = relationship("Cohort", back_populates="assignments")
     module: Mapped["Module"] = relationship("Module", foreign_keys=[module_id])
-

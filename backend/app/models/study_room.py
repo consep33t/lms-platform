@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import String, Boolean, DateTime, Text, Integer, ForeignKey, JSON, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.database import Base
 
-class StudyRoom(Base):
+class StudyRoom(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "study_rooms"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -15,11 +16,6 @@ class StudyRoom(Base):
     topic: Mapped[str | None] = mapped_column(String(255), nullable=True)
     max_participants: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class StudyRoomMember(Base):
@@ -36,7 +32,7 @@ class StudyRoomMember(Base):
     left_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
-class StudyRoomMessage(Base):
+class StudyRoomMessage(ZeroDDLMixin, Base):
     __tablename__ = "study_room_messages"
     __table_args__ = (
         Index("ix_study_room_messages_room", "room_id", "created_at"),
@@ -47,5 +43,4 @@ class StudyRoomMessage(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message_text: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String(50), default="chat", nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

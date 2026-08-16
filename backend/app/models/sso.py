@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
 
-class SSOProvider(Base):
+class SSOProvider(TimestampMixin, ZeroDDLMixin, Base):
     __tablename__ = "sso_providers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -25,9 +26,6 @@ class SSOProvider(Base):
     ldap_bind_dn: Mapped[str | None] = mapped_column(String(255), nullable=True)
     ldap_base_dn: Mapped[str | None] = mapped_column(String(255), nullable=True)
     attribute_mapping: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
 class SSOAuditLog(Base):
     __tablename__ = "sso_audit_logs"

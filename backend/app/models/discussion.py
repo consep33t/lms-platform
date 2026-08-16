@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import String, Boolean, DateTime, Text, Integer, ForeignKey, JSON, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.database import Base
 
-class DiscussionTopic(Base):
+class DiscussionTopic(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "discussion_topics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -16,18 +17,13 @@ class DiscussionTopic(Base):
     is_resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     vote_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     reply_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         Index('ix_discussion_topics_session', 'session_id', 'is_pinned', 'created_at'),
     )
 
 
-class DiscussionReply(Base):
+class DiscussionReply(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "discussion_replies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -36,11 +32,6 @@ class DiscussionReply(Base):
     reply_body: Mapped[str] = mapped_column(Text, nullable=False)
     is_accepted_answer: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     vote_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         Index('ix_discussion_replies_topic', 'topic_id', 'created_at'),

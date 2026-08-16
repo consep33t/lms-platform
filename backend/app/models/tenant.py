@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import String, Integer, Boolean, DateTime, JSON, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base_class import Base
 
-class Tenant(Base):
+class Tenant(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "tenants"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -15,11 +16,6 @@ class Tenant(Base):
     logo_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     primary_color: Mapped[str] = mapped_column(String(20), default='#10B981', nullable=False)
     secondary_color: Mapped[str] = mapped_column(String(20), default='#047857', nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class TenantUser(Base):

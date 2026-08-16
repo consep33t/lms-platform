@@ -1,3 +1,4 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -6,7 +7,7 @@ from app.core.database import Base
 from sqlalchemy import Index
 
 
-class Question(Base):
+class Question(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "questions"
     __table_args__ = (
         Index("ix_questions_session_order", "session_id", "order"),
@@ -19,12 +20,7 @@ class Question(Base):
     points: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     question_type: Mapped[str] = mapped_column(String(50), default="multiple_choice", nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     is_reusable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # Bank soal reusable
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     session: Mapped["ModuleSession"] = relationship("ModuleSession", back_populates="questions")

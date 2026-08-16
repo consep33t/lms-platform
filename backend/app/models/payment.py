@@ -1,3 +1,4 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import Integer, String, Float, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -5,7 +6,7 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Order(Base):
+class Order(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -18,21 +19,15 @@ class Order(Base):
     currency: Mapped[str] = mapped_column(String(10), default="IDR", nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
     coupon_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("coupons.id", ondelete="SET NULL"), nullable=True)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
-class OrderItem(Base):
+class OrderItem(ZeroDDLMixin, Base):
     __tablename__ = "order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     module_id: Mapped[int] = mapped_column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
 
 
 class Transaction(Base):
@@ -50,7 +45,7 @@ class Transaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 
-class Coupon(Base):
+class Coupon(ZeroDDLMixin, Base):
     __tablename__ = "coupons"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -64,5 +59,4 @@ class Coupon(Base):
     valid_from: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

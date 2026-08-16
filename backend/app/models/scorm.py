@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import Integer, String, Boolean, JSON, Float, Text, ForeignKey, DateTime, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
 
-class ScormPackage(Base):
+class ScormPackage(ZeroDDLMixin, Base):
     __tablename__ = "scorm_packages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -15,7 +16,6 @@ class ScormPackage(Base):
     entry_url: Mapped[str] = mapped_column(String(500), nullable=False)
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 class ScormTracking(Base):

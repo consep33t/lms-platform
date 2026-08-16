@@ -1,10 +1,11 @@
+from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 from sqlalchemy import String, Boolean, DateTime, Text, Integer, ForeignKey, JSON, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.database import Base
 
-class BadgeDefinition(Base):
+class BadgeDefinition(ZeroDDLMixin, Base):
     __tablename__ = "badge_definitions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -14,7 +15,6 @@ class BadgeDefinition(Base):
     icon_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     xp_reward: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
     criteria_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 

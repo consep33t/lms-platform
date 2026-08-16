@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: Optional[str] = None
 
     # CORS
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: Any = [
         "http://localhost:5173",
         "http://localhost:3000",
         "https://lms.consep33t.my.id"
@@ -86,7 +86,7 @@ class Settings(BaseSettings):
                     pass
             return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, (list, set)):
-            return list(v)
+            return [str(i) for i in v]
         return ["http://localhost:5173", "https://lms.consep33t.my.id", "http://localhost:3000"]
 
     @property

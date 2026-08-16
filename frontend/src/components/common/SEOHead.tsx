@@ -1,7 +1,6 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
-interface SEOHeadProps {
+export interface SEOHeadProps {
   title: string;
   description: string;
   url?: string;
@@ -9,32 +8,54 @@ interface SEOHeadProps {
   jsonLd?: Record<string, any>;
 }
 
+/**
+ * Atomic SEOHead Component
+ * Dynamically injects page title, meta tags, and Schema.org JSON-LD structured data
+ * into the document head using native React DOM management.
+ */
 export const SEOHead: React.FC<SEOHeadProps> = ({ title, description, url, image, jsonLd }) => {
-  return (
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content="website" />
-      {url && <meta property="og:url" content={url} />}
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      {image && <meta property="og:image" content={image} />}
+  useEffect(() => {
+    // 1. Update Document Title
+    document.title = title ? `${title} | LMS Platform` : 'LMS Platform';
 
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      {url && <meta property="twitter:url" content={url} />}
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      {image && <meta name="twitter:image" content={image} />}
+    // Helper to update or create meta tags
+    const setMetaTag = (attrName: 'name' | 'property', attrValue: string, content: string) => {
+      let element = document.querySelector(`meta[${attrName}="${attrValue}"]`) as HTMLMetaElement;
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attrName, attrValue);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', content);
+    };
 
-      {/* JSON-LD Structured Data */}
-      {jsonLd && (
-        <script type="application/ld+json">
-          {JSON.stringify(jsonLd)}
-        </script>
-      )}
-    </Helmet>
-  );
+    // 2. Standard & OpenGraph / Twitter Meta Tags
+    setMetaTag('name', 'description', description || '');
+    setMetaTag('property', 'og:title', title || '');
+    setMetaTag('property', 'og:description', description || '');
+    setMetaTag('property', 'og:type', 'website');
+    if (url) setMetaTag('property', 'og:url', url);
+    if (image) setMetaTag('property', 'og:image', image);
+
+    setMetaTag('name', 'twitter:card', 'summary_large_image');
+    setMetaTag('name', 'twitter:title', title || '');
+    setMetaTag('name', 'twitter:description', description || '');
+    if (image) setMetaTag('name', 'twitter:image', image);
+
+    // 3. Schema.org JSON-LD Structured Data
+    let scriptTag = document.getElementById('json-ld-structured-data') as HTMLScriptElement;
+    if (jsonLd) {
+      if (!scriptTag) {
+        scriptTag = document.createElement('script');
+        scriptTag.id = 'json-ld-structured-data';
+        scriptTag.type = 'application/ld+json';
+        document.head.appendChild(scriptTag);
+      }
+      scriptTag.textContent = JSON.stringify(jsonLd);
+    } else if (scriptTag) {
+      scriptTag.remove();
+    }
+  }, [title, description, url, image, jsonLd]);
+
+  return null;
 };

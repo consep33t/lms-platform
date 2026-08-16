@@ -84,9 +84,9 @@ export const AppNavbar: React.FC = () => {
                   className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400"
                 >
                   <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
-                    {user.name ? user.name[0].toUpperCase() : 'U'}
+                    {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
                   </div>
-                  <span className="hidden lg:inline">{user.name}</span>
+                  <span className="hidden lg:inline">{user.full_name}</span>
                 </Link>
                 <Button
                   variant="ghost"

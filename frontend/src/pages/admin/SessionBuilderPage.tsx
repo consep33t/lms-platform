@@ -27,7 +27,8 @@ import {
   FileCode2,
   FileSpreadsheet,
   Download,
-  UploadCloud
+  UploadCloud,
+  X
 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
 import api from '@/lib/api'

@@ -33,7 +33,7 @@ interface ProgressItem {
 interface OptionReview {
   id: number
   option_text: string
-  is_correct: bool
+  is_correct: boolean
   order: number
 }
 

@@ -1,11 +1,10 @@
 from app.models.base_mixins import TimestampMixin, SoftDeleteMixin, ZeroDDLMixin
 from datetime import datetime
 import enum
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, Float, Enum, ForeignKey, JSON
+from sqlalchemy import String, Integer, Boolean, DateTime, Text, Float, Enum, ForeignKey, JSON, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
-from sqlalchemy import Index
 
 
 class ContentType(str, enum.Enum):

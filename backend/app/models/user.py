@@ -1,9 +1,10 @@
 from datetime import datetime
 import enum
-from sqlalchemy import String, Boolean, DateTime, Text, Integer, Enum, ForeignKey
+from sqlalchemy import String, Boolean, DateTime, Text, Integer, Enum, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from sqlalchemy import Index
 
 
 class UserRole(str, enum.Enum):
@@ -32,7 +33,9 @@ class User(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     approved_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     avatar_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -70,6 +73,10 @@ class RefreshToken(Base):
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_logs_entity", "entity_type", "entity_id", "created_at"),
+        Index("ix_audit_logs_user_date", "user_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -77,5 +84,6 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., 'module', 'token'
     entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    changes_diff: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

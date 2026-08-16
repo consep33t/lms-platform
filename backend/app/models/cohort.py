@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import String, Integer, Boolean, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -11,12 +11,15 @@ class Cohort(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     members: Mapped[list["CohortMember"]] = relationship("CohortMember", back_populates="cohort", cascade="all, delete-orphan")
+    assignments: Mapped[list["ModuleAssignment"]] = relationship("ModuleAssignment", back_populates="cohort", cascade="all, delete-orphan")
 
 
 class CohortMember(Base):
@@ -28,6 +31,7 @@ class CohortMember(Base):
     joined_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     cohort: Mapped["Cohort"] = relationship("Cohort", back_populates="members")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
 
 
 class ModuleAssignment(Base):
@@ -38,5 +42,9 @@ class ModuleAssignment(Base):
     cohort_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=True)
     user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    assigned_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    assigned_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="NO ACTION"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    cohort: Mapped["Cohort | None"] = relationship("Cohort", back_populates="assignments")
+    module: Mapped["Module"] = relationship("Module", foreign_keys=[module_id])
+

@@ -15,6 +15,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void
   clearAuth: () => void
   isAdmin: () => boolean
+  isAuthenticated: () => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +24,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       setAuth: (user, token) => {
+        // Keep localStorage in sync for backward compat with any legacy code
         localStorage.setItem('access_token', token)
         set({ user, accessToken: token })
       },
@@ -34,7 +36,15 @@ export const useAuthStore = create<AuthState>()(
         const role = get().user?.role
         return role === 'admin' || role === 'superadmin'
       },
+      isAuthenticated: () => {
+        return get().user !== null && get().accessToken !== null
+      },
     }),
-    { name: 'auth-storage', partialize: (state) => ({ user: state.user }) }
+    {
+      name: 'auth-storage',
+      // FIX: Persist BOTH user and accessToken — Zustand is single source of truth
+      partialize: (state) => ({ user: state.user, accessToken: state.accessToken }),
+    }
   )
 )
+

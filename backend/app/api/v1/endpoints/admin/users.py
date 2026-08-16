@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from uuid import uuid4
 from app.core.database import get_db
 from app.core.dependencies import require_admin
 from app.core.security import get_password_hash
@@ -110,7 +111,22 @@ async def admin_update_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
 
-    for field, val in req.model_dump(exclude_unset=True).items():
+    # FIX: Check email uniqueness before updating to prevent IntegrityError 500
+    update_data = req.model_dump(exclude_unset=True)
+    if "email" in update_data and update_data["email"] != user.email:
+        stmt_email_check = select(User).where(
+            User.email == update_data["email"],
+            User.is_deleted == False,
+            User.id != user_id
+        )
+        email_conflict = (await db.execute(stmt_email_check)).scalar_one_or_none()
+        if email_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email '{update_data['email']}' sudah digunakan oleh user lain."
+            )
+
+    for field, val in update_data.items():
         setattr(user, field, val)
 
     return user
@@ -147,6 +163,15 @@ async def admin_delete_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan")
 
+    # FIX: Scramble email on soft-delete to free the UNIQUE constraint,
+    # allowing the same email to be re-registered in the future.
+    deletion_uid = uuid4().hex[:12]
+    user.email = f"deleted_{deletion_uid}_{user.email}"
+    if user.custom_lms_email:
+        user.custom_lms_email = f"deleted_{deletion_uid}_{user.custom_lms_email}"
     user.is_deleted = True
     user.is_active = False
     return {"message": "User berhasil dihapus"}
+
+
+

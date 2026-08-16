@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     full_name: str
     role: UserRole = UserRole.user
     is_active: bool = True
+    meta_data: dict = {}
 
 
 class UserCreate(BaseModel):
@@ -45,9 +46,12 @@ class StudentRegistrationResponse(BaseModel):
 class UserUpdate(BaseModel):
     full_name: str | None = None
     email: str | None = None
+    phone_number: str | None = None
+    institution: str | None = None
     is_active: bool | None = None
     role: UserRole | None = None
     avatar_media_id: int | None = None
+    meta_data: dict | None = None
 
 
 class UserPasswordChange(BaseModel):
@@ -86,3 +90,32 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class LastActiveSession(BaseModel):
+    session_id: int
+    session_title: str
+    module_id: int
+    module_title: str
+    current_step: int
+    total_steps: int
+    progress_percent: float
+
+
+class UpcomingDeadlineItem(BaseModel):
+    cohort_id: int
+    cohort_name: str
+    module_id: int
+    module_title: str
+    due_date: datetime
+    days_left: int
+
+
+class UserDashboardResponse(BaseModel):
+    total_enrolled: int
+    total_completed: int
+    total_certificates: int
+    average_score: float
+    last_active_session: LastActiveSession | None = None
+    upcoming_deadlines: list[UpcomingDeadlineItem] = []
+    recent_certificates_count: int = 0

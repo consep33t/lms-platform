@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status, Cookie
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.auth_service import AuthService
@@ -109,13 +110,35 @@ async def refresh(request: Request, response: Response, db: AsyncSession = Depen
 
 
 @router.post("/logout")
-async def logout(response: Response, request: Request, db: AsyncSession = Depends(get_db)):
+async def logout(
+    response: Response,
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db),
+):
+    # 1. Revoke refresh token in DB
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
         repo = UserRepository(db)
         await repo.revoke_refresh_token(refresh_token)
+
+    # 2. Blacklist the current access token JTI in Redis (proper logout)
+    if credentials:
+        from app.core.security import decode_token
+        from app.core.cache import cache_set
+        from datetime import datetime, timezone
+        payload = decode_token(credentials.credentials)
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if jti and exp:
+            # TTL = remaining seconds until token naturally expires
+            remaining = max(0, int(exp - datetime.now(timezone.utc).timestamp()))
+            if remaining > 0:
+                await cache_set(f"jti_blacklist:{jti}", "1", ttl=remaining)
+
     response.delete_cookie("refresh_token")
     return {"message": "Logout berhasil"}
+
 
 
 @router.get("/me", response_model=UserResponse)

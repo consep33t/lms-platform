@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Users, Key, BarChart3, Layers, LayoutDashboard } from 'lucide-react'
+import { BookOpen, Users, Key, BarChart3, Layers, LayoutDashboard, Megaphone, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
@@ -12,7 +12,10 @@ export function Sidebar() {
     { href: '/admin/tokens', label: 'Token Akses', icon: Key },
     { href: '/admin/cohorts', label: 'Cohort', icon: Layers },
     { href: '/admin/reports', label: 'Laporan', icon: BarChart3 },
+    { href: '/admin/announcements', label: 'Pengumuman', icon: Megaphone },
+    { href: '/admin/audit-logs', label: 'Log Audit', icon: ShieldCheck },
   ]
+
 
   return (
     <aside className="w-64 border-r min-h-[calc(100vh-3.5rem)] bg-card p-4 space-y-2">

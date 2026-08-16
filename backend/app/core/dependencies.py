@@ -20,7 +20,20 @@ async def get_current_user_id(
     user_id = payload.get("sub")
     if not user_id or payload.get("type") != "access":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token akses tidak valid")
+
+    # JWT Blacklist check — block revoked tokens (e.g. after logout)
+    jti = payload.get("jti")
+    if jti:
+        from app.core.cache import cache_get
+        blacklisted = await cache_get(f"jti_blacklist:{jti}")
+        if blacklisted:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token sudah diinvalidasi. Silakan login kembali."
+            )
+
     return int(user_id)
+
 
 
 async def get_current_user(

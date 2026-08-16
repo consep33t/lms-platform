@@ -16,7 +16,21 @@ import AdminTokensPage from '@/pages/admin/TokensPage'
 import AdminCohortsPage from '@/pages/admin/CohortsPage'
 import AdminReportsPage from '@/pages/admin/ReportsPage'
 import SessionBuilderPage from '@/pages/admin/SessionBuilderPage'
+import CertificatesPage from '@/pages/user/CertificatesPage'
+import LeaderboardPage from '@/pages/user/LeaderboardPage'
+import VerifyPage from '@/pages/VerifyPage'
+import AdminAuditLogsPage from '@/pages/admin/AuditLogsPage'
+import AdminAnnouncementsPage from '@/pages/admin/AnnouncementsPage'
+import TenantManagementPage from '@/pages/admin/TenantManagementPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import StudyRoomsPage from '@/pages/user/StudyRoomsPage'
+import CheckoutPage from '@/pages/user/CheckoutPage'
+import OrderHistoryPage from '@/pages/user/OrderHistoryPage'
+import AdminOrdersPage from '@/pages/admin/AdminOrdersPage'
+import AdminScormManagerPage from '@/pages/admin/AdminScormManagerPage'
+import AdminSSOConfigPage from '@/pages/admin/AdminSSOConfigPage'
+
+
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 
@@ -55,12 +69,33 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute><ProfilePage /></ProtectedRoute>,
   },
   {
+    path: '/certificates',
+    element: <ProtectedRoute><CertificatesPage /></ProtectedRoute>,
+  },
+  {
+    path: '/leaderboard',
+    element: <ProtectedRoute><LeaderboardPage /></ProtectedRoute>,
+  },
+  {
+    path: '/verify',
+    element: <VerifyPage />,
+  },
+  {
+    path: '/verify/:code',
+    element: <VerifyPage />,
+  },
+  {
     path: '/about',
     element: <ProtectedRoute><AboutPage /></ProtectedRoute>,
   },
+
   {
     path: '/admin',
     element: <ProtectedRoute requireAdmin><AdminDashboardPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/tenants',
+    element: <ProtectedRoute requireAdmin><TenantManagementPage /></ProtectedRoute>,
   },
   {
     path: '/admin/modules',
@@ -86,6 +121,39 @@ export const router = createBrowserRouter([
     path: '/admin/reports',
     element: <ProtectedRoute requireAdmin><AdminReportsPage /></ProtectedRoute>,
   },
+  {
+    path: '/admin/audit-logs',
+    element: <ProtectedRoute requireAdmin><AdminAuditLogsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/announcements',
+    element: <ProtectedRoute requireAdmin><AdminAnnouncementsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/study-rooms',
+    element: <ProtectedRoute><StudyRoomsPage /></ProtectedRoute>,
+  },
+  {
+    path: '/checkout/:moduleId',
+    element: <ProtectedRoute><CheckoutPage /></ProtectedRoute>,
+  },
+  {
+    path: '/orders',
+    element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/orders',
+    element: <ProtectedRoute requireAdmin><AdminOrdersPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/scorm',
+    element: <ProtectedRoute requireAdmin><AdminScormManagerPage /></ProtectedRoute>,
+  },
+  {
+    path: '/admin/sso',
+    element: <ProtectedRoute requireAdmin><AdminSSOConfigPage /></ProtectedRoute>,
+  },
+
   {
     path: '*',
     element: <NotFoundPage />,

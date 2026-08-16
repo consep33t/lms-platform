@@ -8,6 +8,15 @@ from app.models.token import ModuleToken, TokenUsage
 from app.models.progress import UserModuleProgress, SessionProgress, ProgressStatus, UserAnswer, Certificate, SessionFlag, FlagType
 from app.models.cohort import Cohort, CohortMember, ModuleAssignment
 from app.models.notification import Notification, NotificationType
+from app.models.discussion import DiscussionTopic, DiscussionReply, DiscussionVote
+from app.models.note import UserNote
+from app.models.gamification import BadgeDefinition, UserBadge, UserXPLog
+from app.models.study_room import StudyRoom, StudyRoomMember, StudyRoomMessage
+from app.models.tenant import Tenant, TenantUser
+from app.models.payment import Order, OrderItem, Transaction, Coupon
+from app.models.scorm import ScormPackage, ScormTracking, XAPIStatement
+from app.models.sso import SSOProvider, SSOAuditLog
+from app.models.pwa import PushSubscription, OfflineSyncQueueLog
 
 __all__ = [
     "User",
@@ -44,4 +53,27 @@ __all__ = [
     "ModuleAssignment",
     "Notification",
     "NotificationType",
+    "DiscussionTopic",
+    "DiscussionReply",
+    "DiscussionVote",
+    "UserNote",
+    "BadgeDefinition",
+    "UserBadge",
+    "UserXPLog",
+    "StudyRoom",
+    "StudyRoomMember",
+    "StudyRoomMessage",
+    "Tenant",
+    "TenantUser",
+    "Order",
+    "OrderItem",
+    "Transaction",
+    "Coupon",
+    "ScormPackage",
+    "ScormTracking",
+    "XAPIStatement",
+    "SSOProvider",
+    "SSOAuditLog",
+    "PushSubscription",
+    "OfflineSyncQueueLog",
 ]

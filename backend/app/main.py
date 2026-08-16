@@ -10,13 +10,38 @@ from app.core.cache import get_redis, close_redis
 from app.api.v1.router import api_router
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    await get_redis()
+    # ─── Startup ────────────────────────────────────────────────────────────
+    logger.info("🚀 LMS Backend starting up...")
+
+    # 1. Redis — graceful degradation already handled inside get_redis()
+    redis = await get_redis()
+    if redis:
+        logger.info("✅ Redis terhubung")
+    else:
+        logger.warning("⚠️  Redis tidak tersedia — cache dinonaktifkan")
+
+    # 2. Storage — ensure MinIO bucket exists if S3 driver is active
+    if settings.STORAGE_DRIVER == "s3":
+        from app.core.storage.factory import get_storage_backend
+        storage = get_storage_backend()
+        bucket_ready = await storage.ensure_bucket_exists()
+        if bucket_ready:
+            logger.info(f"✅ MinIO bucket '{settings.S3_BUCKET_NAME}' siap")
+        else:
+            logger.error(f"❌ MinIO bucket '{settings.S3_BUCKET_NAME}' gagal dibuat — upload akan error!")
+
     yield
-    # Shutdown
+
+    # ─── Shutdown ───────────────────────────────────────────────────────────
     await close_redis()
+    logger.info("👋 LMS Backend shutdown selesai")
 
 
 limiter = Limiter(key_func=get_remote_address)

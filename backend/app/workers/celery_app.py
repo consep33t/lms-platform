@@ -10,8 +10,10 @@ celery_app = Celery(
         "app.workers.tasks_pdf",
         "app.workers.tasks_email",
         "app.workers.tasks_cleanup",
+        "app.workers.tasks_certificate",
     ],
 )
+
 
 celery_app.conf.update(
     task_serializer="json",

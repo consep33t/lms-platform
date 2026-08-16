@@ -16,11 +16,12 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://lms.consep33t.my.id"
 
     # Database (MSSQL)
-    DB_SERVER: str
+    DB_SERVER: str = "localhost"
     DB_PORT: int = 1433
-    DB_USER: str
-    DB_PASSWORD: str
+    DB_USER: str = "sa"
+    DB_PASSWORD: str = "secret"
     DB_NAME: str = "lms_db"
+
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

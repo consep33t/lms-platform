@@ -12,8 +12,10 @@ from app.schemas.progress import (
     QuizStepSubmitRequest,
     QuizStepSubmitResponse,
     SessionTimeoutRequest,
-    SessionTimeoutResponse
+    SessionTimeoutResponse,
+    QuizReviewResponse
 )
+
 
 router = APIRouter()
 
@@ -77,9 +79,15 @@ async def submit_session_quiz_legacy(
     current_user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
+    """Legacy submit endpoint (deprecated - use /{session_id}/submit instead)."""
     service = SessionService(db)
-    session_id = req.session_id or 1
-    return await service.submit_session_quiz(session_id, current_user_id, req)
+    # FIX: was hardcoded fallback to session_id=1 which is dangerous
+    if not req.session_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="session_id wajib diisi pada endpoint legacy ini."
+        )
+    return await service.submit_session_quiz(req.session_id, current_user_id, req)
 
 
 @router.post("/contents/{content_id}/watch-progress")
@@ -92,3 +100,26 @@ async def update_watch_progress(
     service = SessionService(db)
     await service.update_watch_progress(content_id, current_user_id, req)
     return {"status": "ok"}
+
+
+@router.post("/{session_id}/flag")
+async def record_anti_cheat_flag(
+    session_id: int,
+    flag_type: str = "tab_switch",
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    service = SessionService(db)
+    return await service.record_session_flag(session_id, current_user_id, flag_type)
+
+
+@router.get("/{session_id}/review", response_model=QuizReviewResponse)
+async def get_session_quiz_review(
+    session_id: int,
+    current_user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    service = SessionService(db)
+    return await service.get_session_quiz_review(session_id, current_user_id)
+
+

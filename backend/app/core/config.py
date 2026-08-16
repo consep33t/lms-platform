@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+from pydantic import field_validator
+from typing import Optional, Any
+import json
 
 
 class Settings(BaseSettings):
@@ -64,9 +66,6 @@ class Settings(BaseSettings):
     # Google OAuth2
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
-
-    from pydantic import field_validator
-    from typing import Any
 
     # CORS
     CORS_ORIGINS: list[str] = [

@@ -53,7 +53,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFoundPage />,
   },
   {
-    path: '/modules/:id',
+    path: '/modules/:moduleSlug',
     element: <ProtectedRoute><ModuleDetailPage /></ProtectedRoute>,
   },
   {

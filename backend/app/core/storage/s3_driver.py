@@ -33,6 +33,10 @@ class S3StorageBackend(StorageBackend):
         except ImportError:
             raise RuntimeError("aioboto3 tidak terpasang. Jalankan: pip install aioboto3")
 
+    def _hash_key(self, key: str) -> str:
+        import hashlib
+        return hashlib.sha256(key.encode()).hexdigest()
+
     async def save_stream(self, key: str, file_obj: BinaryIO, chunk_size: int = 1024 * 1024) -> int:
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
@@ -41,7 +45,8 @@ class S3StorageBackend(StorageBackend):
             part_number = 1
             total = 0
             try:
-                mpu = await s3.create_multipart_upload(Bucket=self.bucket_name, Key=key)
+                hashed_key = self._hash_key(key)
+                mpu = await s3.create_multipart_upload(Bucket=self.bucket_name, Key=hashed_key)
                 upload_id = mpu["UploadId"]  # Only set after successful create
 
                 while True:
@@ -50,7 +55,7 @@ class S3StorageBackend(StorageBackend):
                         break
                     resp = await s3.upload_part(
                         Bucket=self.bucket_name,
-                        Key=key,
+                        Key=hashed_key,
                         PartNumber=part_number,
                         UploadId=upload_id,
                         Body=chunk,
@@ -61,7 +66,7 @@ class S3StorageBackend(StorageBackend):
 
                 await s3.complete_multipart_upload(
                     Bucket=self.bucket_name,
-                    Key=key,
+                    Key=hashed_key,
                     UploadId=upload_id,
                     MultipartUpload={"Parts": parts},
                 )
@@ -71,7 +76,7 @@ class S3StorageBackend(StorageBackend):
                     try:
                         await s3.abort_multipart_upload(
                             Bucket=self.bucket_name,
-                            Key=key,
+                            Key=hashed_key,
                             UploadId=upload_id,
                         )
                     except Exception:
@@ -83,14 +88,14 @@ class S3StorageBackend(StorageBackend):
     async def delete(self, key: str) -> None:
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
-            await s3.delete_object(Bucket=self.bucket_name, Key=key)
+            await s3.delete_object(Bucket=self.bucket_name, Key=self._hash_key(key))
 
-    async def get_signed_url(self, key: str, expires_in: int = 3600) -> str:
+    async def get_signed_url(self, key: str, expires_in: int = 900) -> str:
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
             return await s3.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": self.bucket_name, "Key": key},
+                Params={"Bucket": self.bucket_name, "Key": self._hash_key(key)},
                 ExpiresIn=expires_in,
             )
 
@@ -101,7 +106,7 @@ class S3StorageBackend(StorageBackend):
         session = self._get_session()
         try:
             async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
-                await s3.head_object(Bucket=self.bucket_name, Key=key)
+                await s3.head_object(Bucket=self.bucket_name, Key=self._hash_key(key))
                 return True
         except Exception:
             return False
@@ -151,7 +156,7 @@ class S3StorageBackend(StorageBackend):
     async def generate_presigned_upload_url(self, key: str, content_type: str = "application/octet-stream", expires_in: int = 3600, metadata: dict | None = None) -> dict:
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
-            params = {"Bucket": self.bucket_name, "Key": key, "ContentType": content_type}
+            params = {"Bucket": self.bucket_name, "Key": self._hash_key(key), "ContentType": content_type}
             if metadata:
                 params["Metadata"] = metadata
             url = await s3.generate_presigned_url(
@@ -165,7 +170,7 @@ class S3StorageBackend(StorageBackend):
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
             resp = await s3.create_multipart_upload(
-                Bucket=self.bucket_name, Key=key, ContentType=content_type
+                Bucket=self.bucket_name, Key=self._hash_key(key), ContentType=content_type
             )
             return resp["UploadId"]
 
@@ -174,7 +179,7 @@ class S3StorageBackend(StorageBackend):
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
             return await s3.generate_presigned_url(
                 "upload_part",
-                Params={"Bucket": self.bucket_name, "Key": key, "UploadId": upload_id, "PartNumber": part_number},
+                Params={"Bucket": self.bucket_name, "Key": self._hash_key(key), "UploadId": upload_id, "PartNumber": part_number},
                 ExpiresIn=expires_in,
             )
 
@@ -183,7 +188,7 @@ class S3StorageBackend(StorageBackend):
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
             await s3.complete_multipart_upload(
                 Bucket=self.bucket_name,
-                Key=key,
+                Key=self._hash_key(key),
                 UploadId=upload_id,
                 MultipartUpload={"Parts": parts},
             )
@@ -192,6 +197,6 @@ class S3StorageBackend(StorageBackend):
         session = self._get_session()
         async with session.client("s3", endpoint_url=self.endpoint_url, use_ssl=self.use_ssl) as s3:
             await s3.abort_multipart_upload(
-                Bucket=self.bucket_name, Key=key, UploadId=upload_id
+                Bucket=self.bucket_name, Key=self._hash_key(key), UploadId=upload_id
             )
 

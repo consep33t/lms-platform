@@ -21,9 +21,16 @@ class LocalDiskStorageBackend(StorageBackend):
         self.secret_key = secret_key
         self.public_base_url = public_base_url.rstrip("/")
 
+    def _resolve_path(self, key: str) -> str:
+        base = os.path.abspath(self.base_path)
+        full_path = os.path.abspath(os.path.join(base, key))
+        if os.path.commonpath([base, full_path]) != base:
+            raise ValueError("Path traversal attempt detected")
+        return full_path
+
     async def save_stream(self, key: str, file_obj: BinaryIO, chunk_size: int = 1024 * 1024) -> int:
         """Stream file to disk chunk by chunk — avoids loading large videos into RAM."""
-        full_path = os.path.join(self.base_path, key)
+        full_path = self._resolve_path(key)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         total = 0
         loop = asyncio.get_event_loop()
@@ -34,10 +41,11 @@ class LocalDiskStorageBackend(StorageBackend):
                     break
                 await loop.run_in_executor(None, out.write, chunk)
                 total += len(chunk)
+        os.chmod(full_path, 0o644)
         return total
 
     async def delete(self, key: str) -> None:
-        full_path = os.path.join(self.base_path, key)
+        full_path = self._resolve_path(key)
         if os.path.exists(full_path):
             await asyncio.get_event_loop().run_in_executor(None, os.remove, full_path)
 
@@ -52,10 +60,10 @@ class LocalDiskStorageBackend(StorageBackend):
         return f"{self.public_base_url}/files/{key}?{query}"
 
     def get_absolute_path(self, key: str) -> Optional[str]:
-        return os.path.join(self.base_path, key)
+        return self._resolve_path(key)
 
     async def exists(self, key: str) -> bool:
-        return os.path.exists(os.path.join(self.base_path, key))
+        return os.path.exists(self._resolve_path(key))
 
     async def generate_presigned_upload_url(self, key: str, content_type: str = "application/octet-stream", expires_in: int = 3600, metadata: dict | None = None) -> dict:
         expires = int(time.time()) + expires_in

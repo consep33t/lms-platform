@@ -35,6 +35,21 @@ class MediaService:
         self.storage = storage
         self.repo = MediaRepository(db)
 
+    def inspect_mime_type(self, content: bytes) -> str:
+        try:
+            import magic
+            return magic.from_buffer(content, mime=True)
+        except ImportError:
+            header = content[:8]
+            if header.startswith(b"\x89PNG\r\n\x1a\n"): return "image/png"
+            if header.startswith(b"\xff\xd8\xff"): return "image/jpeg"
+            if header.startswith(b"%PDF-"): return "application/pdf"
+            if header.startswith(b"PK\x03\x04"): return "application/zip"
+            if content.startswith(b"RIFF") and len(content) >= 12 and content[8:12] == b"WEBP": return "image/webp"
+            if header.startswith(b"MZ"): return "application/x-msdownload"
+            if header.startswith(b"\x7fELF"): return "application/x-executable"
+            return "application/octet-stream"
+
     def optimize_image_buffer(self, raw_bytes: bytes, original_mime: str) -> tuple[io.BytesIO, str, str]:
         """Optimizes high-resolution PNG/JPG images into high-clarity, lightweight buffers.
         
@@ -83,6 +98,12 @@ class MediaService:
         owner_type: OwnerType = OwnerType.session_content,
         owner_id: int | None = None
     ) -> tuple[MediaFile, str]:
+        header_chunk = await file.read(2048)
+        await file.seek(0)
+        detected_mime = self.inspect_mime_type(header_chunk)
+        if detected_mime in ("application/x-msdownload", "application/x-executable"):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Executable files are not allowed.")
+
         mime = (file.content_type or "application/octet-stream").lower()
         if mime == "image/jpg":
             mime = "image/jpeg"

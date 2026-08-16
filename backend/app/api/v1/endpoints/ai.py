@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.db.session import get_db
+from app.core.database import get_db
 from app.schemas.ai import (
     AITutorQueryRequest, AITutorResponse,
     QuizExplanationRequest, QuizExplanationResponse,

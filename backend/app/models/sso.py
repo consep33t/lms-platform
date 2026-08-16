@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base_class import Base
+from app.core.database import Base
 
 class SSOProvider(TimestampMixin, ZeroDDLMixin, Base):
     __tablename__ = "sso_providers"

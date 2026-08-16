@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import String, Integer, Boolean, DateTime, JSON, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column
-from app.db.base_class import Base
+from app.core.database import Base
 
 class Tenant(TimestampMixin, SoftDeleteMixin, ZeroDDLMixin, Base):
     __tablename__ = "tenants"

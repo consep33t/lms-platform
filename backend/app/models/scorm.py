@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, Boolean, JSON, Float, Text, ForeignKey, DateTime, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base_class import Base
+from app.core.database import Base
 
 class ScormPackage(ZeroDDLMixin, Base):
     __tablename__ = "scorm_packages"

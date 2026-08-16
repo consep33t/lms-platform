@@ -109,29 +109,22 @@ class ModuleService:
     async def verify_and_unlock_token(
         self, token_code: str, user_id: int, target_module_id: int | None = None
     ) -> dict:
-        token = await self.repo.get_token_by_code(token_code)
-        if not token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token tidak valid atau telah kadaluarsa")
+        from app.services.token_service import TokenService
+        from app.services.notification_service import NotificationService
+        from app.models.notification import NotificationType
 
-        if not token.is_active:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token ini telah dinonaktifkan")
+        token_svc = TokenService(self.db)
+        is_valid, reason, token = await token_svc.validate(token_code, module_id=target_module_id)
+        if not is_valid or not token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=reason)
 
-        if token.expired_at and token.expired_at < datetime.utcnow():
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Masa berlaku token ini telah kadaluarsa")
+        # Redeem token (increments count and records usage idempotently)
+        await token_svc.redeem(token, user_id)
 
-        if token.max_uses > 0 and token.current_uses >= token.max_uses:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Batas kuota penggunaan token ini telah habis")
-
-        # Strict Module Verification
-        if target_module_id is not None and token.module_id != target_module_id:
-            token_mod_title = token.module.title if token.module else f"Modul #{token.module_id}"
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Token '{token_code}' bukan untuk modul ini, melainkan khusus untuk '{token_mod_title}'."
-            )
-
-        # Record usage in database
-        await self.repo.record_token_usage(token, user_id)
+        # Eagerly load module title if needed
+        stmt_m = select(Module).where(Module.id == token.module_id)
+        module = (await self.db.execute(stmt_m)).scalar_one_or_none()
+        module_title = module.title if module else f"Modul #{token.module_id}"
 
         # Check or create user module progress
         stmt = select(UserModuleProgress).where(
@@ -150,9 +143,21 @@ class ModuleService:
             )
             self.db.add(progress)
 
+        # Dispatch in-app notification
+        notif_svc = NotificationService(self.db)
+        await notif_svc.create(
+            user_id=user_id,
+            title="Akses Modul Terbuka",
+            body=f"Selamat! Token berhasil diverifikasi. Akses ke materi modul '{module_title}' telah terbuka.",
+            notif_type=NotificationType.system,
+        )
+
+        await self.db.flush()
+
         return {
             "valid": True,
             "module_id": token.module_id,
-            "module_title": token.module.title if token.module else f"Modul #{token.module_id}",
-            "message": f"Token berhasil diverifikasi! Akses modul '{token.module.title if token.module else ''}' telah terbuka."
+            "module_title": module_title,
+            "message": f"Token berhasil diverifikasi! Akses modul '{module_title}' telah terbuka."
         }
+

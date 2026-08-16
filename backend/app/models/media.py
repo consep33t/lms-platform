@@ -3,6 +3,7 @@ from sqlalchemy import String, Integer, Boolean, DateTime, Text, BigInteger, Enu
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.database import Base
+from sqlalchemy import Index
 import enum
 
 
@@ -11,6 +12,7 @@ class FileType(str, enum.Enum):
     video = "video"
     document = "document"
     audio = "audio"
+    archive = "archive"
 
 
 class StorageDriver(str, enum.Enum):
@@ -30,10 +32,15 @@ class OwnerType(str, enum.Enum):
     avatar = "avatar"
     module_thumbnail = "module_thumbnail"
     certificate = "certificate"
+    discussion_attachment = "discussion_attachment"
+    badge_icon = "badge_icon"
 
 
 class MediaFile(Base):
     __tablename__ = "media_files"
+    __table_args__ = (
+        Index("ix_media_files_owner", "owner_type", "owner_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     owner_type: Mapped[OwnerType] = mapped_column(Enum(OwnerType), nullable=False)

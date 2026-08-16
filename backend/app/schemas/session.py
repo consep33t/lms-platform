@@ -9,6 +9,7 @@ class SessionBase(BaseModel):
     description: str | None = None
     order: int = 0
     duration_minutes: int = 30
+    meta_data: dict = {}
 
 
 class SessionCreate(SessionBase):
@@ -20,6 +21,7 @@ class SessionUpdate(BaseModel):
     description: str | None = None
     order: int | None = None
     duration_minutes: int | None = None
+    meta_data: dict | None = None
 
 
 class SessionContentCreate(BaseModel):

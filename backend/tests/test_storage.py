@@ -1,12 +1,18 @@
-import pytest
+try:
+    import pytest
+    async_test = pytest.mark.asyncio
+except (ImportError, AttributeError):
+    async_test = lambda func: func
+
 import hmac
 import hashlib
 import time
 from app.core.storage.local_driver import LocalDiskStorageBackend
 
 
-@pytest.mark.asyncio
+@async_test
 async def test_signed_url_generation():
+
     driver = LocalDiskStorageBackend(
         base_path="/tmp/test_uploads",
         secret_key="my-test-signing-secret",

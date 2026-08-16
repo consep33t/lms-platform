@@ -6,7 +6,8 @@ from fastapi import HTTPException, status
 from app.models.session import ModuleSession
 from app.models.content import SessionContent, ContentWatchProgress, ContentType
 from app.models.question import Question, QuestionOption
-from app.models.progress import UserModuleProgress, SessionProgress, UserAnswer, ProgressStatus
+from app.models.progress import UserModuleProgress, SessionProgress, UserAnswer, ProgressStatus, SessionFlag, FlagType
+
 from app.schemas.session import SessionDetailResponse, SlideItem, SessionContentResponse
 from app.schemas.question import QuestionResponse, QuestionOptionResponse
 from app.schemas.progress import (
@@ -18,8 +19,12 @@ from app.schemas.progress import (
     QuizStepSubmitRequest,
     QuizStepSubmitResponse,
     SessionTimeoutRequest,
-    SessionTimeoutResponse
+    SessionTimeoutResponse,
+    QuizReviewResponse,
+    QuestionReviewItem,
+    OptionReviewItem
 )
+
 
 
 class SessionService:
@@ -249,6 +254,9 @@ class SessionService:
         sp.score = total_accumulated_score
         sp.time_spent_seconds += req.time_spent_seconds
 
+        # Flush score and time updates to DB within transaction
+        await self.db.flush()
+
         # Calculate step completion percent
         completed_percent = min(100.0, round((req.current_step / max(1, len(all_questions) + len(session.contents))) * 100.0, 1))
 
@@ -361,6 +369,16 @@ class SessionService:
         if completed_sp_count >= len(all_sessions) and len(all_sessions) > 0:
             ump.status = ProgressStatus.completed
             ump.completed_at = datetime.utcnow()
+            # Trigger certificate generation
+            try:
+                from app.workers.tasks_certificate import generate_certificate_task
+                generate_certificate_task.delay(user_id, session.module_id)
+            except Exception as cert_err:
+                print(f"[SESSION SERVICE] Warning triggering certificate task: {cert_err}")
+
+        # Flush all changes to DB within this transaction
+        await self.db.flush()
+
 
         return SessionSubmitResponse(
             session_id=session_id,
@@ -421,3 +439,94 @@ class SessionService:
             wp.watched_percent = max(wp.watched_percent, req.watched_percent)
             if req.is_completed:
                 wp.is_completed = True
+        await self.db.flush()
+
+    async def record_session_flag(self, session_id: int, user_id: int, flag_type_str: str) -> dict:
+        session = await self.get_session_detail(session_id)
+        ump, sp = await self.get_or_create_session_progress(user_id, session)
+
+        try:
+            flag_type = FlagType(flag_type_str)
+        except ValueError:
+            flag_type = FlagType.tab_switch
+
+        flag = SessionFlag(
+            session_progress_id=sp.id,
+            flag_type=flag_type,
+        )
+        self.db.add(flag)
+        await self.db.flush()
+
+        stmt_count = select(func.count(SessionFlag.id)).where(SessionFlag.session_progress_id == sp.id)
+        total_flags = (await self.db.execute(stmt_count)).scalar() or 0
+
+        return {
+            "status": "flagged",
+            "session_id": session_id,
+            "flag_type": flag_type.value,
+            "total_flags": total_flags,
+            "warning": f"Peringatan kecurangan ke-{total_flags}. Sesi kuis diawasi secara otomatis."
+        }
+
+    async def get_session_quiz_review(self, session_id: int, user_id: int) -> QuizReviewResponse:
+        session = await self.get_session_detail(session_id)
+        ump, sp = await self.get_or_create_session_progress(user_id, session)
+
+        # 1. Fetch user answers for this session progress
+        stmt_ans = select(UserAnswer).where(UserAnswer.session_progress_id == sp.id)
+        user_answers = (await self.db.execute(stmt_ans)).scalars().all()
+        answer_map = {ans.question_id: (ans.selected_option_id, ans.is_correct) for ans in user_answers}
+
+        # 2. Fetch questions with options
+        stmt_q = (
+            select(Question)
+            .options(selectinload(Question.options))
+            .where(Question.session_id == session_id, Question.is_deleted == False)
+            .order_by(Question.order.asc())
+        )
+        questions = (await self.db.execute(stmt_q)).scalars().all()
+
+        q_items: list[QuestionReviewItem] = []
+        correct_count = 0
+
+        for q in questions:
+            user_opt_id, is_correct = answer_map.get(q.id, (None, False))
+            if is_correct:
+                correct_count += 1
+
+            opt_items = [
+                OptionReviewItem(
+                    id=opt.id,
+                    option_text=opt.option_text,
+                    is_correct=opt.is_correct,
+                    order=opt.order
+                )
+                for opt in sorted(q.options, key=lambda x: x.order)
+            ]
+
+            q_items.append(QuestionReviewItem(
+                id=q.id,
+                question_text=q.question_text,
+                points=q.points,
+                order=q.order,
+                options=opt_items,
+                user_selected_option_id=user_opt_id,
+                is_user_correct=is_correct
+            ))
+
+        mod_title = session.module.title if session.module else f"Modul #{session.module_id}"
+
+        return QuizReviewResponse(
+            session_id=session.id,
+            session_title=session.title,
+            module_id=session.module_id,
+            module_title=mod_title,
+            final_score=round(sp.score, 1),
+            passed=(sp.score >= 70.0),
+            completed_at=sp.completed_at,
+            total_questions=len(questions),
+            correct_count=correct_count,
+            questions=q_items
+        )
+
+

@@ -24,11 +24,14 @@ import {
   Layers,
   Globe,
   Atom,
-  X,
-  FileCode2
+  FileCode2,
+  FileSpreadsheet,
+  Download,
+  UploadCloud
 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
 import api from '@/lib/api'
+
 
 interface SlideItem {
   id: number
@@ -86,11 +89,13 @@ export function LiveCounter() {
 
   // Quiz States
   const [quizQuestion, setQuizQuestion] = useState('')
+  const [questionType, setQuestionType] = useState('multiple_choice')
   const [opt1, setOpt1] = useState('')
   const [opt2, setOpt2] = useState('')
   const [opt3, setOpt3] = useState('')
   const [opt4, setOpt4] = useState('')
-  const [correctOptIdx, setCorrectOptIdx] = useState(1)
+  const [correctOpts, setCorrectOpts] = useState<number[]>([1])
+  const [metaData, setMetaData] = useState('{}')
   const [savingQuiz, setSavingQuiz] = useState(false)
 
   // Custom Code Modal States
@@ -100,9 +105,55 @@ export function LiveCounter() {
   const [customDesc, setCustomDesc] = useState('')
   const [customCode, setCustomCode] = useState('')
 
+  // CSV Import States
+  const [showCsvModal, setShowCsvModal] = useState(false)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [importingCsv, setImportingCsv] = useState(false)
+
+  const handleDownloadCsvTemplate = () => {
+    const csvContent =
+      'question_text,points,option_a,option_b,option_c,option_d,correct_option,explanation\n' +
+      '"Perintah apa yang digunakan untuk memeriksa container Docker aktif?",10,"docker ps","docker run","docker logs","docker stop","A","docker ps menampilkan daftar container aktif."\n' +
+      '"Berapakah nomor port standar untuk protokol HTTPS?",10,"80","443","22","8080","B","HTTPS berjalan pada port 443 secara default."\n' +
+      '"Manakah metode HTTP yang bersifat idempotent?",10,"POST","PATCH","GET","Semua Salah","C","GET aman dan idempotent."\n'
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `template_soal_kuis_sesi_${sessionId}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleImportCsv = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!csvFile || !sessionId) return
+
+    const formData = new FormData()
+    formData.append('file', csvFile)
+
+    try {
+      setImportingCsv(true)
+      const res = await api.post(`/admin/questions/session/${sessionId}/import-csv`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      alert(res.data.message || 'Berhasil mengimpor soal kuis!')
+      setShowCsvModal(false)
+      setCsvFile(null)
+      fetchSessionFlow()
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Gagal mengimpor file CSV.')
+    } finally {
+      setImportingCsv(false)
+    }
+  }
+
   useEffect(() => {
     fetchSessionFlow()
   }, [sessionId])
+
 
   const fetchSessionFlow = async () => {
     try {
@@ -368,14 +419,31 @@ spec:
   // Save Quiz Checkpoint
   const handleSaveQuiz = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!quizQuestion.trim() || !opt1.trim() || !opt2.trim()) return
+    if (!quizQuestion.trim()) return
 
-    const options = [
-      { option_text: opt1, is_correct: correctOptIdx === 1, order: 1 },
-      { option_text: opt2, is_correct: correctOptIdx === 2, order: 2 },
-    ]
-    if (opt3.trim()) options.push({ option_text: opt3, is_correct: correctOptIdx === 3, order: 3 })
-    if (opt4.trim()) options.push({ option_text: opt4, is_correct: correctOptIdx === 4, order: 4 })
+    let options: any[] = []
+    if (questionType === 'multiple_choice' || questionType === 'multi_select') {
+      if (!opt1.trim() || !opt2.trim()) {
+        alert('Minimal 2 pilihan wajib diisi')
+        return
+      }
+      options = [
+        { option_text: opt1, is_correct: correctOpts.includes(1), order: 1 },
+        { option_text: opt2, is_correct: correctOpts.includes(2), order: 2 },
+      ]
+      if (opt3.trim()) options.push({ option_text: opt3, is_correct: correctOpts.includes(3), order: 3 })
+      if (opt4.trim()) options.push({ option_text: opt4, is_correct: correctOpts.includes(4), order: 4 })
+    }
+
+    let parsedMeta = {}
+    try {
+      if (metaData.trim()) {
+        parsedMeta = JSON.parse(metaData)
+      }
+    } catch (err) {
+      alert('Format meta_data JSON tidak valid.')
+      return
+    }
 
     const nextOrder = (sessionDetail?.steps?.length || 0) + 1
     try {
@@ -383,10 +451,12 @@ spec:
       await api.post(`/admin/modules/sessions/${sessionId}/questions`, {
         session_id: parseInt(sessionId!),
         question_text: quizQuestion,
+        question_type: questionType,
         points: 1,
         order: nextOrder,
         is_reusable: false,
-        options: options
+        options: options,
+        meta_data: parsedMeta
       })
       alert('Soal kuis checkpoint berhasil ditambahkan ke sesi!')
       setQuizQuestion('')
@@ -394,7 +464,8 @@ spec:
       setOpt2('')
       setOpt3('')
       setOpt4('')
-      setCorrectOptIdx(1)
+      setCorrectOpts([1])
+      setMetaData('{}')
       fetchSessionFlow()
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Gagal menyimpan kuis.')
@@ -622,37 +693,91 @@ spec:
                   {/* 4. BUILDER KUIS CHECKPOINT */}
                   {activeTab === 'quiz' && (
                     <form onSubmit={handleSaveQuiz} className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10">
+                        <div className="text-xs">
+                          <span className="font-bold text-amber-900 dark:text-amber-200">Import Soal Massal:</span>
+                          <span className="text-muted-foreground ml-1">Unggah berkas spreadsheet CSV untuk menambahkan banyak soal sekaligus.</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCsvModal(true)}
+                          className="h-8 gap-1.5 text-xs font-bold border-amber-500/50 bg-card hover:bg-amber-500/15"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 text-amber-600" /> Import Soal (.CSV)
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label htmlFor="qType" className="text-sm font-semibold">Tipe Pertanyaan</Label>
+                          <select
+                            id="qType"
+                            className="w-full p-2 rounded-lg border bg-background text-sm"
+                            value={questionType}
+                            onChange={(e) => setQuestionType(e.target.value)}
+                          >
+                            <option value="multiple_choice">Pilihan Ganda</option>
+                            <option value="multi_select">Multi-Select</option>
+                            <option value="essay">Essay</option>
+                            <option value="code">Code Snippet</option>
+                          </select>
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
                         <Label htmlFor="qTitle" className="text-sm font-semibold">Pertanyaan Evaluasi Checkpoint</Label>
-                        <Input
+                        <textarea
                           id="qTitle"
                           placeholder="Misal: Perintah apa yang digunakan untuk memeriksa status container Docker?"
+                          className="w-full p-3 rounded-lg border bg-background text-sm min-h-[80px]"
                           value={quizQuestion}
                           onChange={(e) => setQuizQuestion(e.target.value)}
                           required
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Pilihan Jawaban (Pilih radio untuk menentukan kunci jawaban yang benar):</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="flex items-center gap-2 p-2.5 border rounded-xl bg-muted/20">
-                            <input type="radio" name="cOpt" checked={correctOptIdx === 1} onChange={() => setCorrectOptIdx(1)} />
-                            <Input placeholder="Pilihan A" value={opt1} onChange={(e) => setOpt1(e.target.value)} required />
-                          </div>
-                          <div className="flex items-center gap-2 p-2.5 border rounded-xl bg-muted/20">
-                            <input type="radio" name="cOpt" checked={correctOptIdx === 2} onChange={() => setCorrectOptIdx(2)} />
-                            <Input placeholder="Pilihan B" value={opt2} onChange={(e) => setOpt2(e.target.value)} required />
-                          </div>
-                          <div className="flex items-center gap-2 p-2.5 border rounded-xl bg-muted/20">
-                            <input type="radio" name="cOpt" checked={correctOptIdx === 3} onChange={() => setCorrectOptIdx(3)} />
-                            <Input placeholder="Pilihan C (Opsional)" value={opt3} onChange={(e) => setOpt3(e.target.value)} />
-                          </div>
-                          <div className="flex items-center gap-2 p-2.5 border rounded-xl bg-muted/20">
-                            <input type="radio" name="cOpt" checked={correctOptIdx === 4} onChange={() => setCorrectOptIdx(4)} />
-                            <Input placeholder="Pilihan D (Opsional)" value={opt4} onChange={(e) => setOpt4(e.target.value)} />
+                      {(questionType === 'multiple_choice' || questionType === 'multi_select') && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Pilihan Jawaban (Pilih checkbox/radio untuk menentukan kunci jawaban yang benar):</Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[1, 2, 3, 4].map((num) => {
+                              const val = num === 1 ? opt1 : num === 2 ? opt2 : num === 3 ? opt3 : opt4;
+                              const setVal = num === 1 ? setOpt1 : num === 2 ? setOpt2 : num === 3 ? setOpt3 : setOpt4;
+                              return (
+                                <div key={num} className="flex items-center gap-2 p-2.5 border rounded-xl bg-muted/20">
+                                  <input
+                                    type={questionType === 'multiple_choice' ? 'radio' : 'checkbox'}
+                                    name={questionType === 'multiple_choice' ? 'cOpt' : `cOpt${num}`}
+                                    checked={correctOpts.includes(num)}
+                                    onChange={(e) => {
+                                      if (questionType === 'multiple_choice') {
+                                        setCorrectOpts([num])
+                                      } else {
+                                        setCorrectOpts(prev => 
+                                          e.target.checked ? [...prev, num] : prev.filter(x => x !== num)
+                                        )
+                                      }
+                                    }}
+                                  />
+                                  <Input placeholder={`Pilihan ${String.fromCharCode(64 + num)}${num > 2 ? ' (Opsional)' : ''}`} value={val} onChange={(e) => setVal(e.target.value)} required={num <= 2} />
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <Label htmlFor="qMeta" className="text-sm font-semibold">Metadata JSON (Opsional, untuk kustomisasi Code/Essay)</Label>
+                        <textarea
+                          id="qMeta"
+                          placeholder='{"language": "python", "template": "def solve():\n  pass"}'
+                          className="w-full p-3 rounded-lg border bg-slate-950 text-slate-100 font-mono text-xs min-h-[80px]"
+                          value={metaData}
+                          onChange={(e) => setMetaData(e.target.value)}
+                        />
                       </div>
 
                       <div className="flex justify-end">
@@ -792,8 +917,71 @@ spec:
               </Card>
             </div>
           )}
+
+          {/* MODAL DIALOG IMPORT SOAL DARI CSV */}
+          {showCsvModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <Card className="w-full max-w-lg border-amber-500/50 shadow-2xl bg-card animate-in fade-in zoom-in-95 duration-200">
+                <CardHeader className="bg-muted/40 border-b flex flex-row items-center justify-between p-4 sm:p-6">
+                  <div>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+                      <FileSpreadsheet className="h-5 w-5 text-amber-600" /> Import Soal Kuis dari CSV
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Unggah file CSV dengan kolom pertanyaan, opsi pilihan, dan kunci jawaban.
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setShowCsvModal(false)} className="h-8 w-8 p-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <form onSubmit={handleImportCsv}>
+                  <CardContent className="p-4 sm:p-6 space-y-4">
+                    <div className="p-4 rounded-xl border border-dashed border-amber-500/40 bg-amber-500/5 space-y-3">
+                      <div className="text-xs text-muted-foreground leading-relaxed">
+                        <p className="font-semibold text-foreground mb-1">Panduan Format Kolom CSV:</p>
+                        <code>question_text, points, option_a, option_b, option_c, option_d, correct_option, explanation</code>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleDownloadCsvTemplate}
+                        className="w-full text-xs font-bold gap-1.5"
+                      >
+                        <Download className="h-3.5 w-3.5" /> Unduh Contoh Template CSV
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="csvFile" className="text-xs font-bold">Pilih File CSV dari Komputer:</Label>
+                      <input
+                        id="csvFile"
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                        required
+                        className="block w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowCsvModal(false)}>
+                        Batal
+                      </Button>
+                      <Button type="submit" disabled={importingCsv || !csvFile} size="sm" className="gap-1.5 bg-amber-600 hover:bg-amber-700 font-bold">
+                        <UploadCloud className="h-4 w-4" /> {importingCsv ? 'Mengimpor...' : 'Mulai Import Soal'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </form>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
     </div>
   )
 }
+

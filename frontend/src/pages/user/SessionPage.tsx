@@ -20,10 +20,73 @@ import {
   CheckCircle,
   AlertTriangle,
   Award,
-  Layers
+  Layers,
+  MessageSquare,
+  Bot
 } from 'lucide-react'
 import api from '@/lib/api'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ActiveLearnerPresence } from '@/components/realtime/ActiveLearnerPresence'
+import { AITutorChatDrawer } from '@/components/ai/AITutorChatDrawer'
+import { AIQuestionExplanationModal } from '@/components/quiz/AIQuestionExplanationModal'
+
+function BadgeCelebrationModal({ score, onClose }: { score: number, onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-background border-2 border-emerald-500 p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in duration-500">
+        <Award className="h-20 w-20 text-emerald-500 mx-auto mb-4 animate-bounce" />
+        <h2 className="text-2xl font-black text-foreground mb-2">Sesi Selesai!</h2>
+        <p className="text-muted-foreground mb-6">Luar biasa! Anda mendapatkan skor {Math.round(score)}%.</p>
+        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold" onClick={onClose}>Lanjutkan</Button>
+      </div>
+    </div>
+  )
+}
+
+function SessionNotesDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  if (!isOpen) return null
+  return (
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-background border-l shadow-2xl p-6 overflow-y-auto transform transition-transform animate-in slide-in-from-right duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="font-bold text-lg flex items-center gap-2"><FileText className="h-5 w-5"/> Catatan Sesi</h3>
+        <Button variant="ghost" size="sm" onClick={onClose}><XCircle className="h-5 w-5"/></Button>
+      </div>
+      <textarea 
+        className="w-full h-[calc(100vh-150px)] p-4 rounded-xl border bg-muted/20 focus:ring-2 focus:ring-primary focus:outline-none resize-none" 
+        placeholder="Tulis catatan Anda di sini... (otomatis tersimpan lokal)"
+      />
+    </div>
+  )
+}
+
+function SessionDiscussionTab() {
+  return (
+    <div className="space-y-6">
+      <div className="p-6 bg-card border rounded-2xl shadow-sm">
+        <h3 className="text-lg font-bold mb-4">Forum Diskusi Sesi (Q&A)</h3>
+        <textarea 
+          className="w-full p-4 rounded-xl border bg-muted/20 focus:ring-2 focus:ring-primary focus:outline-none resize-none mb-3" 
+          placeholder="Ada pertanyaan mengenai materi di sesi ini? Tulis di sini..."
+          rows={3}
+        />
+        <Button className="font-bold">Kirim Pertanyaan</Button>
+      </div>
+      <div className="space-y-4">
+        <div className="p-4 border rounded-xl bg-muted/10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs">U</div>
+            <div>
+              <div className="text-sm font-bold">User123</div>
+              <div className="text-xs text-muted-foreground">2 jam yang lalu</div>
+            </div>
+          </div>
+          <p className="text-sm">Bagaimana cara menerapkan konsep ini pada proyek nyata?</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface OptionItem {
   id: number
@@ -36,9 +99,11 @@ interface QuestionItem {
   id: number
   session_id: number
   question_text: string
+  question_type?: string
   points: number
   order: number
   options: OptionItem[]
+  meta_data?: any
 }
 
 interface SlideItem {
@@ -85,15 +150,48 @@ export default function SessionPage() {
   const [timeoutMessage, setTimeoutMessage] = useState<string | null>(null)
 
   // Quiz State
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({})
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, any>>({})
   const [accumulatedScore, setAccumulatedScore] = useState<number>(0)
   const [isFinished, setIsFinished] = useState(false)
   const [isSubmittingStep, setIsSubmittingStep] = useState(false)
+
+  // Anti-Cheat State
+  const [tabSwitchCount, setTabSwitchCount] = useState(0)
+  const [antiCheatWarning, setAntiCheatWarning] = useState<string | null>(null)
+
+  // Gamification & Features
+  const [isNotesOpen, setIsNotesOpen] = useState(false)
+  const [showBadgeCelebration, setShowBadgeCelebration] = useState(false)
+  const [isAITutorOpen, setIsAITutorOpen] = useState(false)
+  const [explanationQuestion, setExplanationQuestion] = useState<string | null>(null)
 
   // Load Session Data
   useEffect(() => {
     fetchSessionData()
   }, [id])
+
+  // Anti-Cheat Tab-Switch Detection
+  useEffect(() => {
+    if (loading || isFinished || isTimedOut) return
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount((prev) => {
+          const nextCount = prev + 1
+          setAntiCheatWarning(`⚠️ Peringatan Anti-Cheat (${nextCount}/3): Anda terdeteksi berpindah tab! Aktivitas ini dicatat dalam log integritas ujian.`)
+          api.post(`/sessions/${id}/flag?flag_type=tab_switch`).catch((err) => {
+            console.error('Failed to report anti-cheat flag', err)
+          })
+          setTimeout(() => setAntiCheatWarning(null), 6000)
+          return nextCount
+        })
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [id, loading, isFinished, isTimedOut])
+
 
   const fetchSessionData = async () => {
     try {
@@ -155,16 +253,47 @@ export default function SessionPage() {
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionId }))
   }
 
+  const handleToggleOption = (questionId: number, optionId: number) => {
+    if (isTimedOut || isFinished) return
+    setSelectedAnswers((prev) => {
+      const current = prev[questionId] || []
+      const isSelected = current.includes(optionId)
+      const next = isSelected ? current.filter((id: number) => id !== optionId) : [...current, optionId]
+      return { ...prev, [questionId]: next }
+    })
+  }
+
+  const handleTextAnswer = (questionId: number, text: string) => {
+    if (isTimedOut || isFinished) return
+    setSelectedAnswers((prev) => ({ ...prev, [questionId]: text }))
+  }
+
   const handleNextStep = async () => {
     if (!session || !session.steps) return
     const currentStep = session.steps[currentStepIndex]
 
     // If current step is a quiz, submit the quiz step answers first
     if (currentStep.step_type === 'quiz' && currentStep.questions.length > 0) {
-      const stepAnswers = currentStep.questions.map((q) => ({
-        question_id: q.id,
-        selected_option_id: selectedAnswers[q.id] || 0
-      }))
+      const stepAnswers = currentStep.questions.map((q) => {
+        const val = selectedAnswers[q.id]
+        let selectedOptionId = null
+        let selectedOptionIds = null
+        let textAnswer = null
+        
+        if (typeof val === 'number') selectedOptionId = val
+        else if (Array.isArray(val)) selectedOptionIds = val
+        else if (typeof val === 'string') textAnswer = val
+        else if (q.question_type === 'multiple_choice') selectedOptionId = 0
+        else if (q.question_type === 'multi_select') selectedOptionIds = []
+        else textAnswer = ''
+        
+        return {
+          question_id: q.id,
+          selected_option_id: selectedOptionId,
+          selected_option_ids: selectedOptionIds,
+          text_answer: textAnswer
+        }
+      })
 
       try {
         setIsSubmittingStep(true)
@@ -200,10 +329,22 @@ export default function SessionPage() {
     if (!session) return
     try {
       setIsSubmittingStep(true)
-      const allAnswersPayload = Object.entries(selectedAnswers).map(([qId, optId]) => ({
-        question_id: parseInt(qId),
-        selected_option_id: optId
-      }))
+      const allAnswersPayload = Object.entries(selectedAnswers).map(([qId, val]) => {
+        let selectedOptionId = null
+        let selectedOptionIds = null
+        let textAnswer = null
+        
+        if (typeof val === 'number') selectedOptionId = val
+        else if (Array.isArray(val)) selectedOptionIds = val
+        else if (typeof val === 'string') textAnswer = val
+
+        return {
+          question_id: parseInt(qId),
+          selected_option_id: selectedOptionId,
+          selected_option_ids: selectedOptionIds,
+          text_answer: textAnswer
+        }
+      })
 
       const res = await api.post(`/sessions/${id}/submit`, {
         session_id: session.id,
@@ -214,6 +355,9 @@ export default function SessionPage() {
 
       setAccumulatedScore(res.data.score)
       setIsFinished(true)
+      if (res.data.score >= 70.0) {
+        setShowBadgeCelebration(true)
+      }
     } catch (err) {
       console.error('Failed to complete session', err)
     } finally {
@@ -274,14 +418,23 @@ export default function SessionPage() {
       <div className="max-w-4xl mx-auto space-y-6 pb-16">
         {/* TOP BAR: Navigasi & Live Countdown Timer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border bg-card/60 backdrop-blur shadow-sm">
-          <Link to={`/modules/${session.module_id}`}>
-            <Button variant="ghost" size="sm" className="gap-2 -ml-2 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" /> Keluar ke Modul
+          <div className="flex items-center gap-2">
+            <Link to={`/modules/${session.module_id}`}>
+              <Button variant="ghost" size="sm" className="gap-2 -ml-2 text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" /> Keluar ke Modul
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsNotesOpen(true)}>
+              <FileText className="h-4 w-4" /> Catatan
             </Button>
-          </Link>
+            <Button variant="outline" size="sm" className="gap-2 border-primary/50 text-primary hover:bg-primary/10" onClick={() => setIsAITutorOpen(true)}>
+              <Bot className="h-4 w-4" /> AI Tutor
+            </Button>
+          </div>
 
           {/* Live Countdown Timer Pill */}
           <div className="flex items-center gap-3">
+            <ActiveLearnerPresence count={42} />
             <div
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full font-mono font-bold text-sm border shadow-inner transition-colors ${
                 isTimedOut
@@ -314,6 +467,14 @@ export default function SessionPage() {
           </div>
           <Progress value={stepPercent} className="h-2.5 rounded-full" />
         </div>
+
+        {/* ANTI-CHEAT ALERT BANNER */}
+        {antiCheatWarning && (
+          <div className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="font-medium">{antiCheatWarning}</span>
+          </div>
+        )}
 
         {/* BANNER TIMEOUT JIKA WAKTU HABIS */}
         {isTimedOut && !isFinished && (
@@ -395,9 +556,16 @@ export default function SessionPage() {
 
         {/* AREA UTAMA KONTEN SLIDE / KUIS BERURUTAN */}
         {!isFinished && !isTimedOut && (
-          <Card className="border-border/80 shadow-md overflow-hidden transition-all duration-300">
-            {/* Header Slide */}
-            <CardHeader className="bg-muted/20 border-b pb-3">
+          <Tabs defaultValue="materi" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-6">
+              <TabsTrigger value="materi" className="gap-2"><BookOpen className="w-4 h-4" /> Materi & Konten</TabsTrigger>
+              <TabsTrigger value="diskusi" className="gap-2"><MessageSquare className="w-4 h-4" /> Diskusi Sesi (Q&A)</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="materi" className="mt-0">
+              <Card className="border-border/80 shadow-md overflow-hidden transition-all duration-300">
+                {/* Header Slide */}
+                <CardHeader className="bg-muted/20 border-b pb-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   {currentStep.step_type === 'text' && <FileText className="h-5 w-5 text-primary" />}
@@ -455,7 +623,7 @@ export default function SessionPage() {
                     </video>
                   </div>
                   <p className="text-xs text-center text-muted-foreground font-medium">
-                    Demonstrasi Teknis Langsung � Didukung HTTP 206 Partial Content Chunked Streaming
+                    Demonstrasi Teknis Langsung  Didukung HTTP 206 Partial Content Chunked Streaming
                   </p>
                 </div>
               )}
@@ -468,38 +636,103 @@ export default function SessionPage() {
                   </div>
 
                   {currentStep.questions.map((q, qIdx) => {
-                    const selectedOptId = selectedAnswers[q.id]
+                    const qType = q.question_type || 'multiple_choice'
 
                     return (
                       <div key={q.id} className="space-y-3 p-5 rounded-xl border bg-muted/10">
-                        <div className="text-base font-bold text-foreground leading-snug">
-                          {q.question_text}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-base font-bold text-foreground leading-snug">
+                            {q.question_text}
+                          </div>
+                          <Badge variant="secondary" className="shrink-0 text-[10px] uppercase">
+                            {qType.replace('_', ' ')}
+                          </Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-2.5 pt-2">
-                          {q.options.map((opt) => {
-                            const isSelected = selectedOptId === opt.id
+                        <div className="pt-2">
+                          {qType === 'multiple_choice' && (
+                            <div className="grid grid-cols-1 gap-2.5">
+                              {q.options.map((opt) => {
+                                const isSelected = selectedAnswers[q.id] === opt.id
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => handleSelectOption(q.id, opt.id)}
+                                    className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all flex items-center justify-between ${
+                                      isSelected
+                                        ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
+                                        : 'border-border/60 hover:bg-muted/40 text-foreground/90'
+                                    }`}
+                                  >
+                                    <span>{opt.option_text}</span>
+                                    {isSelected && (
+                                      <span className="text-xs font-semibold text-primary px-2 py-0.5 rounded bg-primary/15 shrink-0">
+                                        Pilihan Anda
+                                      </span>
+                                    )}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
 
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleSelectOption(q.id, opt.id)}
-                                className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all flex items-center justify-between ${
-                                  isSelected
-                                    ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
-                                    : 'border-border/60 hover:bg-muted/40 text-foreground/90'
-                                }`}
-                              >
-                                <span>{opt.option_text}</span>
-                                {isSelected && (
-                                  <span className="text-xs font-semibold text-primary px-2 py-0.5 rounded bg-primary/15 shrink-0">
-                                    Pilihan Anda
-                                  </span>
-                                )}
-                              </button>
-                            )
-                          })}
+                          {qType === 'multi_select' && (
+                            <div className="grid grid-cols-1 gap-2.5">
+                              {q.options.map((opt) => {
+                                const selectedArr = selectedAnswers[q.id] || []
+                                const isSelected = selectedArr.includes(opt.id)
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => handleToggleOption(q.id, opt.id)}
+                                    className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all flex items-center justify-between ${
+                                      isSelected
+                                        ? 'border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary'
+                                        : 'border-border/60 hover:bg-muted/40 text-foreground/90'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
+                                        {isSelected && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                                      </div>
+                                      <span>{opt.option_text}</span>
+                                    </div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+
+                          {qType === 'essay' && (
+                            <textarea
+                              className="w-full p-4 rounded-xl border bg-background text-sm min-h-[120px] focus:ring-2 focus:ring-primary focus:outline-none"
+                              placeholder="Ketik jawaban essay Anda di sini..."
+                              value={selectedAnswers[q.id] || ''}
+                              onChange={(e) => handleTextAnswer(q.id, e.target.value)}
+                            />
+                          )}
+
+                          {qType === 'code' && (
+                            <textarea
+                              className="w-full p-4 rounded-xl border bg-slate-950 text-slate-100 font-mono text-sm min-h-[200px] focus:ring-2 focus:ring-primary focus:outline-none leading-relaxed"
+                              placeholder="/* Tulis kode Anda di sini */"
+                              value={selectedAnswers[q.id] || (q.meta_data?.template || '')}
+                              onChange={(e) => handleTextAnswer(q.id, e.target.value)}
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30 gap-1 text-xs font-semibold"
+                            onClick={() => setExplanationQuestion(q.question_text)}
+                          >
+                            <Sparkles className="h-3 w-3" /> Tanya AI Penjelasan
+                          </Button>
                         </div>
                       </div>
                     )
@@ -528,7 +761,7 @@ export default function SessionPage() {
                 disabled={
                   isSubmittingStep ||
                   (currentStep.step_type === 'quiz' &&
-                    currentStep.questions.some((q) => !selectedAnswers[q.id]))
+                    currentStep.questions.some((q) => !selectedAnswers[q.id] || (Array.isArray(selectedAnswers[q.id]) && selectedAnswers[q.id].length === 0)))
                 }
                 className="gap-2 font-bold px-6 shadow-sm"
               >
@@ -543,9 +776,27 @@ export default function SessionPage() {
                 )}
               </Button>
             </CardFooter>
-          </Card>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="diskusi" className="mt-0">
+              <SessionDiscussionTab />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
+
+      {showBadgeCelebration && (
+        <BadgeCelebrationModal score={accumulatedScore} onClose={() => setShowBadgeCelebration(false)} />
+      )}
+      
+      <SessionNotesDrawer isOpen={isNotesOpen} onClose={() => setIsNotesOpen(false)} />
+      <AITutorChatDrawer isOpen={isAITutorOpen} onClose={() => setIsAITutorOpen(false)} />
+      <AIQuestionExplanationModal 
+        isOpen={!!explanationQuestion} 
+        onClose={() => setExplanationQuestion(null)} 
+        question={explanationQuestion || ''} 
+      />
     </PageLayout>
   )
 }

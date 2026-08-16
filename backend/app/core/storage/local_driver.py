@@ -56,3 +56,36 @@ class LocalDiskStorageBackend(StorageBackend):
 
     async def exists(self, key: str) -> bool:
         return os.path.exists(os.path.join(self.base_path, key))
+
+    async def generate_presigned_upload_url(self, key: str, content_type: str = "application/octet-stream", expires_in: int = 3600, metadata: dict | None = None) -> dict:
+        expires = int(time.time()) + expires_in
+        signature = hmac.new(
+            self.secret_key.encode(),
+            f"upload:{key}:{expires}".encode(),
+            hashlib.sha256
+        ).hexdigest()
+        query = urlencode({"expires": expires, "signature": signature})
+        return {
+            "url": f"{self.public_base_url}/upload/{key}?{query}",
+            "method": "PUT",
+            "headers": {"Content-Type": content_type}
+        }
+
+    async def create_multipart_upload(self, key: str, content_type: str = "application/octet-stream") -> str:
+        return f"local-upload-{key}-{int(time.time())}"
+
+    async def generate_presigned_part_url(self, key: str, upload_id: str, part_number: int, expires_in: int = 3600) -> str:
+        expires = int(time.time()) + expires_in
+        signature = hmac.new(
+            self.secret_key.encode(),
+            f"upload_part:{upload_id}:{part_number}:{expires}".encode(),
+            hashlib.sha256
+        ).hexdigest()
+        query = urlencode({"expires": expires, "signature": signature})
+        return f"{self.public_base_url}/upload/{key}/parts/{part_number}?upload_id={upload_id}&{query}"
+
+    async def complete_multipart_upload(self, key: str, upload_id: str, parts: list[dict]) -> None:
+        pass
+
+    async def abort_multipart_upload(self, key: str, upload_id: str) -> None:
+        pass

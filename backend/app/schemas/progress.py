@@ -97,3 +97,34 @@ class UserModuleProgressItem(BaseModel):
 class SessionFlagCreate(BaseModel):
     session_progress_id: int
     flag_type: FlagType
+
+
+class OptionReviewItem(BaseModel):
+    id: int
+    option_text: str
+    is_correct: bool
+    order: int
+
+
+class QuestionReviewItem(BaseModel):
+    id: int
+    question_text: str
+    points: int
+    order: int
+    options: list[OptionReviewItem]
+    user_selected_option_id: int | None = None
+    is_user_correct: bool = False
+
+
+class QuizReviewResponse(BaseModel):
+    session_id: int
+    session_title: str
+    module_id: int
+    module_title: str
+    final_score: float
+    passed: bool
+    completed_at: datetime | None = None
+    total_questions: int
+    correct_count: int
+    questions: list[QuestionReviewItem]
+

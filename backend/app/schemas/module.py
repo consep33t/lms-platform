@@ -11,6 +11,7 @@ class ModuleBase(BaseModel):
     status: ModuleStatus = ModuleStatus.draft
     passing_score: float = 70.0
     order: int = 0
+    meta_data: dict = {}
 
 
 class ModuleCreate(ModuleBase):
@@ -24,6 +25,7 @@ class ModuleUpdate(BaseModel):
     thumbnail_media_id: int | None = None
     passing_score: float | None = None
     order: int | None = None
+    meta_data: dict | None = None
 
 
 class ModuleResponse(ModuleBase):

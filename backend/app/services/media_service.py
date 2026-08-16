@@ -23,6 +23,9 @@ MIME_TYPE_MAP = {
     # Documents (PDF, Word - Max 50MB)
     "application/pdf": (FileType.document, 50 * 1024 * 1024),
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (FileType.document, 50 * 1024 * 1024),
+    # Archives (ZIP - Max 50MB)
+    "application/zip": (FileType.archive, 50 * 1024 * 1024),
+    "application/x-zip-compressed": (FileType.archive, 50 * 1024 * 1024),
 }
 
 
@@ -88,6 +91,18 @@ class MediaService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Tipe file '{mime}' tidak didukung.")
 
         file_type, max_size = MIME_TYPE_MAP[mime]
+        
+        if owner_type == OwnerType.discussion_attachment:
+            max_size = min(max_size, 10 * 1024 * 1024)  # 10MB max
+            if file_type not in (FileType.image, FileType.document, FileType.archive):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tipe file tidak didukung untuk attachment diskusi.")
+            if mime not in ("application/pdf", "application/zip", "application/x-zip-compressed") and file_type != FileType.image:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hanya gambar, PDF, dan ZIP yang diizinkan untuk attachment diskusi.")
+        
+        if owner_type == OwnerType.badge_icon:
+            if file_type != FileType.image:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Badge icon harus berupa gambar.")
+                
         file_uuid = uuid.uuid4().hex
 
         # For images: optimize to prevent server memory bloat while preserving crystal-clear clarity

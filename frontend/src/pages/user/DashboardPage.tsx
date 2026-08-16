@@ -6,7 +6,22 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { Link } from 'react-router-dom'
-import { BookOpen, Search, Sparkles, CheckCircle2, ShieldCheck, Lock, PlayCircle, Trophy } from 'lucide-react'
+import {
+  BookOpen,
+  Search,
+  Sparkles,
+  CheckCircle2,
+  ShieldCheck,
+  Lock,
+  PlayCircle,
+  Trophy,
+  Clock,
+  Award,
+  Calendar,
+  ArrowRight,
+  TrendingUp,
+  AlertCircle
+} from 'lucide-react'
 import api from '@/lib/api'
 
 interface ModuleItem {
@@ -29,9 +44,39 @@ interface UserProgressItem {
   average_score: number
 }
 
+interface LastActiveSession {
+  session_id: number
+  session_title: string
+  module_id: number
+  module_title: string
+  current_step: number
+  total_steps: number
+  progress_percent: number
+}
+
+interface UpcomingDeadline {
+  cohort_id: number
+  cohort_name: string
+  module_id: number
+  module_title: string
+  due_date: string
+  days_left: number
+}
+
+interface DashboardSummary {
+  total_enrolled: number
+  total_completed: number
+  total_certificates: number
+  average_score: number
+  last_active_session: LastActiveSession | null
+  upcoming_deadlines: UpcomingDeadline[]
+  recent_certificates_count: number
+}
+
 export default function DashboardPage() {
   const [modules, setModules] = useState<ModuleItem[]>([])
   const [userProgressMap, setUserProgressMap] = useState<Record<number, UserProgressItem>>({})
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -46,6 +91,13 @@ export default function DashboardPage() {
       setModules(resMods.data)
 
       try {
+        const resSum = await api.get('/users/me/dashboard')
+        setSummary(resSum.data)
+      } catch (err) {
+        // Guest or not logged in
+      }
+
+      try {
         const resProg = await api.get('/users/me/progress')
         const pMap: Record<number, UserProgressItem> = {}
         for (const p of resProg.data) {
@@ -53,7 +105,7 @@ export default function DashboardPage() {
         }
         setUserProgressMap(pMap)
       } catch (err) {
-        // Non-blocking if guest
+        // Non-blocking
       }
     } catch (err) {
       console.error('Failed to fetch modules', err)
@@ -85,8 +137,108 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Quick Stats Grid */}
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="border-border/80 shadow-sm bg-card/60">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{summary.total_enrolled}</div>
+                  <div className="text-[11px] text-muted-foreground">Modul Diikuti</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/80 shadow-sm bg-card/60">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{summary.total_completed}</div>
+                  <div className="text-[11px] text-muted-foreground">Modul Lulus</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/80 shadow-sm bg-card/60">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold shrink-0">
+                  <Award className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{summary.total_certificates}</div>
+                  <div className="text-[11px] text-muted-foreground">Sertifikat Resmi</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/80 shadow-sm bg-card/60">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold shrink-0">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{summary.average_score}%</div>
+                  <div className="text-[11px] text-muted-foreground">Rata-rata Skor</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Resume Learning Widget */}
+        {summary?.last_active_session && (
+          <Card className="border-primary/40 bg-gradient-to-r from-primary/10 via-background to-transparent shadow-md overflow-hidden animate-in fade-in">
+            <CardContent className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
+                  <Clock className="h-3 w-3" /> Sesi Sedang Berjalan
+                </div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {summary.last_active_session.session_title}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Bagian dari: <strong>{summary.last_active_session.module_title}</strong>
+                </p>
+              </div>
+
+              <Link to={`/sessions/${summary.last_active_session.session_id}`}>
+                <Button className="font-bold shadow-md gap-2">
+                  <PlayCircle className="h-4 w-4" /> Lanjutkan Sesi Ini <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upcoming Cohort Deadlines Alert */}
+        {summary && summary.upcoming_deadlines.length > 0 && (
+          <div className="space-y-2">
+            {summary.upcoming_deadlines.map((dl) => (
+              <div
+                key={`${dl.cohort_id}-${dl.module_id}`}
+                className="p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-3 text-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-foreground">Tenggat Waktu Cohort:</span> {dl.module_title} ({dl.cohort_name})
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono bg-background text-amber-600 border-amber-500/40">
+                  {dl.days_left === 0 ? 'Hari Ini!' : `${dl.days_left} Hari Lagi`}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Filter & Search */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center pt-2">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -193,7 +345,7 @@ export default function DashboardPage() {
                         {isCompleted ? (
                           <><Trophy className="h-4 w-4 mr-2" /> Ulas Modul (Selesai)</>
                         ) : isEnrolled ? (
-                          <><PlayCircle className="h-4 w-4 mr-2" /> Lanjutkan Pembelajaran</>
+                          <><PlayCircle className="h-4 w-4 mr-2" /> Buka Sesi Pembelajaran</>
                         ) : (
                           <><Lock className="h-4 w-4 mr-2" /> Buka Modul (Perlu Token)</>
                         )}

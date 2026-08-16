@@ -1,6 +1,6 @@
 from datetime import datetime
 import enum
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, Float, Enum, ForeignKey
+from sqlalchemy import String, Integer, Boolean, DateTime, Text, Float, Enum, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -22,7 +22,9 @@ class Module(Base):
     thumbnail_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     passing_score: Mapped[float] = mapped_column(Float, default=70.0, nullable=False)
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    meta_data: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

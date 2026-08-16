@@ -1,176 +1,120 @@
-version: "3.9"
+version: '3.8'
 
 services:
   lms_database:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: lms_database
-    ports:
-      - "127.0.0.1:1434:1433"
+    image: postgres:15-alpine
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=LmsProdSecret2026!
-      - MSSQL_PID=Developer
-      - TZ=Asia/Jakarta
+      POSTGRES_USER: ${DB_USER:-lms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lms_password}
+      POSTGRES_DB: ${DB_NAME:-lms_prod}
     volumes:
-      - lms_mssql_data:/var/opt/mssql
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - lms_network
-    restart: always
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'LmsProdSecret2026!' -Q 'SELECT 1' -No -C"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
-
-  lms_redis:
-    image: redis:7-alpine
-    container_name: lms_redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - lms_redis_data:/data
-    networks:
-      - lms_network
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lms_user} -d ${DB_NAME:-lms_prod}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2G
+
+  lms_redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   lms_backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: lms_backend_prod:latest
-    container_name: lms_backend
-    env_file:
-      - ./backend/.env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
     environment:
-      - DB_SERVER=lms_database
-      - REDIS_URL=redis://lms_redis:6379/0
-      - CELERY_BROKER_URL=redis://lms_redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
-      - STORAGE_LOCAL_BASE_PATH=/data/uploads
-      - S3_ENDPOINT_URL=http://shared-minio:9010
-      - S3_ACCESS_KEY=admin
-      - S3_SECRET_KEY=SuperSecretPassword123
-      - S3_BUCKET_NAME=lms
-      - S3_USE_SSL=false
-      - WA_GATEWAY_URL=http://192.168.10.100:3333
-      - WA_GATEWAY_ENABLED=true
-      - EMAILS_ENABLED=true
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - FRONTEND_URL=https://lms.consep33t.my.id
-      - GOOGLE_CLIENT_ID=
-      - GOOGLE_CLIENT_SECRET=
-      - TZ=Asia/Jakarta
-    volumes:
-      - lms_uploads:/data/uploads
-      - /etc/localtime:/etc/localtime:ro
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-lms_user}:${DB_PASSWORD:-lms_password}@lms_database:5432/${DB_NAME:-lms_prod}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-super_secret_jwt_key_production_2026}
+      - DEBUG=False
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
     depends_on:
       lms_database:
         condition: service_healthy
       lms_redis:
         condition: service_healthy
-    networks:
-      - lms_network
-      - shared_network
-    restart: always
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
 
-  lms_worker:
+  lms_celery_worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: lms_backend_prod:latest
-    container_name: lms_worker
-    env_file:
-      - ./backend/.env
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
     environment:
-      - DB_SERVER=lms_database
-      - REDIS_URL=redis://lms_redis:6379/0
-      - CELERY_BROKER_URL=redis://lms_redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
-      - STORAGE_LOCAL_BASE_PATH=/data/uploads
-      - S3_ENDPOINT_URL=http://shared-minio:9010
-      - S3_ACCESS_KEY=admin
-      - S3_SECRET_KEY=SuperSecretPassword123
-      - S3_BUCKET_NAME=lms
-      - S3_USE_SSL=false
-      - TZ=Asia/Jakarta
-    volumes:
-      - lms_uploads:/data/uploads
-      - /etc/localtime:/etc/localtime:ro
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-lms_user}:${DB_PASSWORD:-lms_password}@lms_database:5432/${DB_NAME:-lms_prod}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis_password}@lms_redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-super_secret_jwt_key_production_2026}
+      - DEBUG=False
     depends_on:
-      lms_database:
-        condition: service_healthy
+      lms_backend:
+        condition: service_started
       lms_redis:
         condition: service_healthy
-    networks:
-      - lms_network
-      - shared_network
-    restart: always
-    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
-
-  lms_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: lms_backend_prod:latest
-    container_name: lms_beat
-    env_file:
-      - ./backend/.env
-    environment:
-      - REDIS_URL=redis://lms_redis:6379/0
-      - CELERY_BROKER_URL=redis://lms_redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://lms_redis:6379/2
-      - TZ=Asia/Jakarta
-    depends_on:
-      - lms_redis
-      - lms_worker
-    networks:
-      - lms_network
-    restart: always
-    command: celery -A app.workers.celery_app beat --loglevel=info
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1.5G
 
   lms_frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: lms_frontend_prod:latest
-    container_name: lms_frontend
-    networks:
-      - lms_network
-    restart: always
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
 
   lms_nginx:
-    image: nginx:stable-alpine
-    container_name: lms_nginx
+    image: nginx:1.25-alpine
     ports:
-      - "8088:80"
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./deploy/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - lms_uploads:/data/uploads:ro
-      - /etc/localtime:/etc/localtime:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - lms_backend
       - lms_frontend
-    networks:
-      - lms_network
-    restart: always
-
-networks:
-  lms_network:
-    driver: bridge
-    name: lms_prod_network
-  shared_network:
-    external: true
-    name: wifi-management-app_wifi_network
+    restart: unless-stopped
 
 volumes:
-  lms_mssql_data:
-  lms_redis_data:
-  lms_uploads:
+  postgres_data:
+  redis_data:
